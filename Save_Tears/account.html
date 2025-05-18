@@ -1,33 +1,79 @@
 <!DOCTYPE html>
 <html lang="zh">
+
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>账户信息</title>
-  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="css/style.css" />
 </head>
+
 <body>
-  <header class="top-bar">
-    <span class="logo">👤 账户</span>
-    <h1>My Account</h1>
-    <span class="close-btn">✕</span>
-  </header>
+  <div id="userAccount">
+    <header class="top-bar">
+      <span class="logo">👤 账户</span>
+      <h1>My Account</h1>
+      <span class="close-btn">✕</span>
+    </header>
 
-  <main class="container">
-    <section class="info-card">
-      <h3>用户名：张三</h3>
-      <p>邮箱：zhangsan@example.com</p>
-      <p>等级：白银会员</p>
-    </section>
+    <main class="container">
+      <section class="info-card">
+        <!--显示用户信息-->
+        <h3>用户名：
+          <span>{{userInfo.name}}</span>
+        </h3>
+        <p>邮箱：
+          <span>{{userInfo.email}}</span>
+        </p>
+        <p>等级：
+          <span v-if="userInfo.level === 1">青铜会员</span>
+          <span v-else-if="userInfo.level === 2">白银会员</span>
+          <span v-else-if="userInfo.level === 3">黄金会员</span>
+          <span v-else-if="userInfo.level === 4">钻石会员</span>
+          <span v-else-if="userInfo.level === 5">王者会员</span>
+          <span v-else>其他用户</span>
+        </p>
+      </section>
 
-    <section class="info-card">
-      <h4>近期活动</h4>
-      <ul>
-        <li>2025-05-15 登录系统</li>
-        <li>2025-05-10 缴费成功 ¥45.80</li>
-        <li>2025-05-08 浏览用水页面</li>
-      </ul>
-    </section>
-  </main>
+      <section class="info-card">
+        <h4>近期活动</h4>
+        <ul>
+          <li v-for="activity in userInfo.recentActivities" :key="activity.date">
+            <time>{{activity.date}}</time>&nbsp;&nbsp;
+            <span>{{activity.action}}</span>
+          </li>
+        </ul>
+      </section>
+    </main>
+  </div>
+
+  <script type="module">
+    import { createApp } from 'https://unpkg.com/vue@3/dist/vue.esm-browser.js'
+    createApp({
+      data() {
+        return {
+          //用户信息
+          userInfo:
+          {
+            'name': '张三',
+            'email': 'zhangsan@example.com',
+            'level': 2,
+            //近期活动
+            recentActivities: [
+              { 'date': '2025-05-15', 'action': '登录系统' },
+              { 'date': '2025-05-10', 'action': '缴费成功 $45.80' },
+              { 'date': '2025-05-08', 'action': '浏览用水页面' },
+            ],
+          },
+        }
+
+      },
+
+      methods: {
+
+      }
+    }).mount('#userAccount')
+  </script>
 </body>
+
 </html>
