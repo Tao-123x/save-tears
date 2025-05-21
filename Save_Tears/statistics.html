@@ -1,41 +1,44 @@
 <!DOCTYPE html>
 <html lang="zh">
+
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>积分统计</title>
   <link rel="stylesheet" href="css/style.css" />
 </head>
+
 <body>
-  <header class="top-bar">
-    <span class="logo">📊 排名</span>
-    <h1>Ranking</h1>
-    <span class="close-btn">✕</span>
-  </header>
+  <div id="userAccount">
+    <header class="top-bar">
+      <span class="logo">📊 排名</span>
+      <h1>Ranking</h1>
+      <span class="close-btn">✕</span>
+    </header>
 
-  <main class="container">
-    <section class="info-card">
-      <h3>您本月积分：<strong>96</strong> | 排名第 8</h3>
-    </section>
+    <main class="container">
+      <section class="info-card">
+        <h3>您本月积分：<strong>{{userInfo.points}}</strong> | 排名第 8</h3>
+      </section>
 
-    <section class="info-card">
-      <h4>排行榜 TOP3</h4>
-      <ol>
-        <li>张三 - 120</li>
-        <li>李四 - 115</li>
-        <li>王五 - 112</li>
-      </ol>
-    </section>
+      <section class="info-card">
+        <h4>排行榜 TOP3</h4>
+        <ol>
+          <li>张三 - 120</li>
+          <li>李四 - 115</li>
+          <li>王五 - 112</li>
+        </ol>
+      </section>
 
-    <section class="info-card">
-      <h4>积分趋势（图表占位）</h4>
-      <div class="placeholder">[ 积分图表 ]</div>
-    </section>
-  </main>
+      <section class="info-card">
+        <h4>积分趋势（图表占位）</h4>
+        <div class="placeholder">[ 积分图表 ]</div>
+      </section>
+    </main>
+  </div>
 
-  <script type="module">
-    import { createApp } from 'https://unpkg.com/vue@3/dist/vue.esm-browser.js'
-
+  <script type="module" src="js/user-service.js">
   </script>
 </body>
+
 </html>

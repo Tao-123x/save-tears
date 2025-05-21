@@ -47,32 +47,7 @@
     </main>
   </div>
 
-  <script type="module">
-    import { createApp } from 'https://unpkg.com/vue@3/dist/vue.esm-browser.js'
-    createApp({
-      data() {
-        return {
-          //用户信息
-          userInfo:
-          {
-            'name': '张三',
-            'email': 'zhangsan@example.com',
-            'level': 2,
-            //近期活动
-            recentActivities: [
-              { 'date': '2025-05-15', 'action': '登录系统' },
-              { 'date': '2025-05-10', 'action': '缴费成功 $45.80' },
-              { 'date': '2025-05-08', 'action': '浏览用水页面' },
-            ],
-          },
-        }
-
-      },
-
-      methods: {
-
-      }
-    }).mount('#userAccount')
+  <script type="module" src="js/user-service.js">
   </script>
 </body>
 

@@ -1,31 +1,54 @@
 <!DOCTYPE html>
 <html lang="zh">
+
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>缴费中心</title>
   <link rel="stylesheet" href="css/style.css" />
 </head>
+
 <body>
-  <header class="top-bar">
-    <span class="logo">💰 支付</span>
-    <h1>Bill & Payment</h1>
-    <span class="close-btn">✕</span>
-  </header>
+  <div id="userAccount">
+    <header class="top-bar">
+      <span class="logo">💰 支付</span>
+      <h1>Bill & Payment</h1>
+      <span class="close-btn">✕</span>
+    </header>
 
-  <main class="container">
-    <section class="info-card">
-      <h3>未缴账单：¥45.80</h3>
-      <button class="btn">立即缴费</button>
-    </section>
+    <main class="container">
+      <section class="info-card">
+        <h3>
+          <span>未缴账单：</span>
+          <ul>
+            <div v-for="notPaid in sortedPaidInfo" :key="notPaid.date">
+              <li v-if="notPaid.ifPaid == false">
+                <time>{{notPaid.date}}</time>&nbsp;&nbsp;
+                <span>$ {{notPaid.amount}}</span>
+              </li>
+            </div>
+          </ul>
+        </h3>
 
-    <section class="info-card">
-      <h4>历史缴费记录</h4>
-      <ul>
-        <li>2025-04 - ¥52.00 - 已支付</li>
-        <li>2025-03 - ¥49.00 - 已支付</li>
-      </ul>
-    </section>
-  </main>
+        <button class="btn">立即缴费</button>
+      </section>
+
+      <section class="info-card">
+        <h4>历史缴费记录</h4>
+        <ul>
+          <div v-for="paid in sortedPaidInfo" :key="paid.date">
+            <li v-if="paid.ifPaid == true">
+              <time>{{paid.date}}</time>&nbsp;&nbsp;
+              <span>$ {{paid.amount}}</span>
+            </li>
+          </div>
+        </ul>
+      </section>
+    </main>
+  </div>
+
+  <script type="module" src="js/user-service.js">
+  </script>
 </body>
+
 </html>
