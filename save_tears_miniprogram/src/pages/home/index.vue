@@ -1,7 +1,7 @@
 <template>
   <view class="home-page">
     <!-- 背景图层 -->
-    <image class="bg-image" src="/static/images/bg_login.jpg" mode="aspectFill" />
+    <image class="bg-image" src="/static/images/bg_login.jpg" mode="aspectFill" /> <!-- TODO: Replace background image here -->
     
     <!-- 主内容区域 -->
     <view class="content-wrapper">
@@ -9,7 +9,7 @@
       <view class="header-section">
         <view class="header-row">
           <text class="welcome-text">welcome back, {{ username }}</text>
-          <image class="avatar-small" src="/static/images/logo_avatar.jpg" mode="aspectFill" />
+          <image class="avatar-small" src="/static/images/logo_avatar.jpg" mode="aspectFill" /> <!-- TODO: Replace small avatar here -->
         </view>
         <text class="title-text">Today's challenges</text>
       </view>

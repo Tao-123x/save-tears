@@ -4,6 +4,7 @@
     <image 
       class="bg-image" 
       src="/static/images/bg_login.jpg" 
+      <!-- TODO: Replace background image here --> 
       mode="aspectFill"
     />
     
@@ -14,6 +15,7 @@
         <image 
           class="logo-avatar" 
           src="/static/images/logo_avatar.jpg" 
+          <!-- TODO: Replace logo avatar here --> 
           mode="aspectFill"
         />
         <text class="welcome-text">Welcome to log in!</text>

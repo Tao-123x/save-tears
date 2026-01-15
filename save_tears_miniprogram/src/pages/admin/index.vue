@@ -1,7 +1,7 @@
 <template>
   <view class="admin-page">
     <!-- 背景图层 -->
-    <image class="bg-image" src="/static/images/bg_admin.jpg" mode="aspectFill" />
+    <image class="bg-image" src="/static/images/bg_admin.jpg" mode="aspectFill" /> <!-- TODO: Replace admin background here -->
     
     <!-- 顶部导航栏 -->
     <view class="top-nav-bar">

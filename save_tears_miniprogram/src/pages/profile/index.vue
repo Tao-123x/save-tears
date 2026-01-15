@@ -6,7 +6,7 @@
     <!-- 头部用户信息区域 -->
     <view class="header-section">
       <view class="user-info-row">
-        <image class="user-avatar" src="/static/images/logo_avatar.jpg" mode="aspectFill" />
+        <image class="user-avatar" src="/static/images/logo_avatar.jpg" mode="aspectFill" /> <!-- TODO: Replace user avatar here -->
         <view class="user-details">
           <text class="welcome-text">Welcome back.</text>
           <text class="username-text">{{ username }}.</text>

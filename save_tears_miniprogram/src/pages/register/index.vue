@@ -1,13 +1,13 @@
 <template>
   <view class="register-page">
     <!-- 背景图层 -->
-    <image class="bg-image" src="/static/images/bg_login.jpg" mode="aspectFill" />
+    <image class="bg-image" src="/static/images/bg_login.jpg" mode="aspectFill" /> <!-- TODO: Replace background image here -->
     
     <!-- 主内容区域 -->
     <view class="content-wrapper">
       <!-- Logo 头像区域 -->
       <view class="logo-section">
-        <image class="logo-avatar" src="/static/images/logo_avatar.jpg" mode="aspectFill" />
+        <image class="logo-avatar" src="/static/images/logo_avatar.jpg" mode="aspectFill" /> <!-- TODO: Replace logo avatar here -->
         <text class="welcome-text">Create Account</text>
       </view>
 
