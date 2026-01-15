@@ -1,0 +1,100 @@
+{
+	"pages": [
+		{
+			"path": "pages/login/index",
+			"style": {
+				"navigationBarTitleText": "登录",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/register/index",
+			"style": {
+				"navigationBarTitleText": "注册",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/home/index",
+			"style": {
+				"navigationBarTitleText": "首页",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/profile/index",
+			"style": {
+				"navigationBarTitleText": "我的",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/admin/index",
+			"style": {
+				"navigationBarTitleText": "管理中心",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/water-flow/index",
+			"style": {
+				"navigationBarTitleText": "用水表",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/sewage-turbidity/index",
+			"style": {
+				"navigationBarTitleText": "污水表",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/water-bill/index",
+			"style": {
+				"navigationBarTitleText": "账单",
+				"navigationStyle": "custom"
+			}
+		}
+	],
+	"globalStyle": {
+		"navigationBarTextStyle": "black",
+		"navigationBarTitleText": "Save Tears",
+		"navigationBarBackgroundColor": "#FFFFFF",
+		"backgroundColor": "#FFFFFF",
+		"backgroundTextStyle": "dark"
+	},
+	"tabBar": {
+		"color": "#7A7E83",
+		"selectedColor": "#3886CB",
+		"borderStyle": "black",
+		"backgroundColor": "#FFFFFF",
+		"list": [
+			{
+				"pagePath": "pages/home/index",
+				"text": "首页",
+				"iconPath": "static/images/tab_home.png",
+				"selectedIconPath": "static/images/tab_home_active.png"
+			},
+			{
+				"pagePath": "pages/profile/index",
+				"text": "我的",
+				"iconPath": "static/images/tab_profile.png",
+				"selectedIconPath": "static/images/tab_profile_active.png"
+			}
+		]
+	},
+	"condition": {
+		"current": 0,
+		"list": [
+			{
+				"name": "登录页",
+				"path": "pages/login/index"
+			},
+			{
+				"name": "管理员页",
+				"path": "pages/admin/index"
+			}
+		]
+	}
+}
