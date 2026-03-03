@@ -212,7 +212,7 @@ This is the mini-program project developed based on uni-app.
 
 ---
 
-## ❓ Troubleshooting
+##  Troubleshooting
 
 **Q: Backend reports `Access denied for user 'root'@'localhost'`**
 A: Incorrect database password.
