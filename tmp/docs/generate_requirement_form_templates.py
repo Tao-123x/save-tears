@@ -1,5 +1,11 @@
 from pathlib import Path
 
+from docx import Document
+from docx.enum.text import WD_ALIGN_PARAGRAPH
+from docx.oxml import OxmlElement
+from docx.oxml.ns import qn
+from docx.shared import Inches, Pt, RGBColor
+
 
 OUTPUT_DIR = Path("/Users/tanxuebin/Downloads/up-clean/output/doc")
 
@@ -101,3 +107,143 @@ PART_B_HEADERS = [
     ("Dependencies or risks", "依赖项或风险"),
     ("Remarks", "备注"),
 ]
+
+
+def set_cell_shading(cell, fill):
+    tc_pr = cell._tc.get_or_add_tcPr()
+    shd = OxmlElement("w:shd")
+    shd.set(qn("w:fill"), fill)
+    tc_pr.append(shd)
+
+
+def apply_page_setup(doc):
+    section = doc.sections[0]
+    section.top_margin = Inches(0.7)
+    section.bottom_margin = Inches(0.7)
+    section.left_margin = Inches(0.75)
+    section.right_margin = Inches(0.75)
+
+    normal = doc.styles["Normal"]
+    normal.font.name = "Aptos"
+    normal._element.rPr.rFonts.set(qn("w:eastAsia"), "Microsoft YaHei")
+    normal.font.size = Pt(10)
+
+
+def set_east_asia_font(run, font_name):
+    run.font.name = font_name
+    rpr = run._element.get_or_add_rPr()
+    rfonts = rpr.rFonts
+    if rfonts is None:
+        rfonts = OxmlElement("w:rFonts")
+        rpr.append(rfonts)
+    rfonts.set(qn("w:eastAsia"), font_name)
+
+
+def add_title(doc, title):
+    p = doc.add_paragraph()
+    p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    r = p.add_run(title)
+    r.bold = True
+    r.font.size = Pt(18)
+    r.font.color.rgb = RGBColor(31, 78, 121)
+    set_east_asia_font(r, "Microsoft YaHei")
+
+
+def add_intro(doc, purpose, instructions):
+    p = doc.add_paragraph()
+    r = p.add_run("Purpose / 填写目的: ")
+    r.bold = True
+    set_east_asia_font(r, "Microsoft YaHei")
+    r = p.add_run(purpose)
+    set_east_asia_font(r, "Microsoft YaHei")
+
+    p = doc.add_paragraph()
+    r = p.add_run("Instructions / 填写说明: ")
+    r.bold = True
+    set_east_asia_font(r, "Microsoft YaHei")
+    r = p.add_run(instructions)
+    set_east_asia_font(r, "Microsoft YaHei")
+
+
+def add_part_a_table(doc):
+    table = doc.add_table(rows=1, cols=2)
+    table.style = "Table Grid"
+    headers = table.rows[0].cells
+    headers[0].text = "Field / 字段"
+    headers[1].text = "Response / 填写内容"
+    set_cell_shading(headers[0], "D9EAF7")
+    set_cell_shading(headers[1], "D9EAF7")
+
+    for en_label, zh_label in PART_A_FIELDS:
+        row = table.add_row().cells
+        row[0].text = f"{en_label} / {zh_label}"
+        row[1].text = ""
+
+
+def add_part_b_table(doc):
+    table = doc.add_table(rows=4, cols=len(PART_B_HEADERS))
+    table.style = "Table Grid"
+    for index, (en_label, zh_label) in enumerate(PART_B_HEADERS):
+        table.rows[0].cells[index].text = f"{en_label}\n{zh_label}"
+        set_cell_shading(table.rows[0].cells[index], "D9EAF7")
+    for row_index in range(1, 4):
+        for col_index in range(len(PART_B_HEADERS)):
+            table.rows[row_index].cells[col_index].text = ""
+
+
+def add_hint_list(doc, hints, heading):
+    doc.add_paragraph(heading)
+    for hint in hints:
+        p = doc.add_paragraph(style="List Bullet")
+        p.add_run(hint)
+
+
+def build_document(language, group):
+    doc = Document()
+    apply_page_setup(doc)
+
+    if language == "zh":
+        title = group["zh_title"]
+        purpose = "本表用于收集贵组对系统功能、数据对接和协作方式的需求，以便后续统一复核与开发安排。"
+        instructions = "每组填写一份；Part A 填写一次；Part B 可填写多条需求；若细节暂未确定，可先填写初步想法，后续会议再统一确认。"
+        hint_heading = "Group-specific hints / 本组填写提示"
+        follow_up = "Follow-up / 后续说明: 如有尚不明确的事项，可在后续统一复核会议中继续讨论并确认。"
+    else:
+        title = group["en_title"]
+        purpose = "This form is used to collect your group's feature requests, technical coordination needs, and collaboration expectations for later review and planning."
+        instructions = "Each group should complete one form. Fill Part A once. Use Part B for multiple requirement items. Rough answers are acceptable if details are not final yet."
+        hint_heading = "Group-specific hints / 本组填写提示"
+        follow_up = "Follow-up / 后续说明: If anything is still unclear, it can be discussed and confirmed in the later review meeting."
+
+    add_title(doc, title)
+    add_intro(doc, purpose, instructions)
+
+    doc.add_heading("Part A. Group Overview / 小组概况", level=1)
+    add_part_a_table(doc)
+
+    doc.add_paragraph()
+    doc.add_heading("Part B. Requirement Items / 需求明细", level=1)
+    add_part_b_table(doc)
+
+    doc.add_paragraph()
+    add_hint_list(doc, group["zh_hints"] if language == "zh" else group["en_hints"], hint_heading)
+
+    doc.add_paragraph()
+    doc.add_paragraph(follow_up)
+    return doc
+
+
+def main():
+    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+    for group in GROUPS:
+        zh_doc = build_document("zh", group)
+        zh_doc.save(OUTPUT_DIR / group["zh_filename"])
+
+        en_doc = build_document("en", group)
+        en_doc.save(OUTPUT_DIR / group["en_filename"])
+
+    print("PASS: generated 8 requirement form templates")
+
+
+if __name__ == "__main__":
+    main()
