@@ -1,3 +1,8 @@
+import os
+import shutil
+import subprocess
+import sys
+from functools import lru_cache
 from pathlib import Path
 
 from docx import Document
@@ -7,7 +12,85 @@ from docx.oxml.ns import qn
 from docx.shared import Inches, Pt, RGBColor
 
 
-OUTPUT_DIR = Path("/Users/tanxuebin/Downloads/up-clean/output/doc")
+ROOT_DIR = Path(__file__).resolve().parents[2]
+OUTPUT_DIR = ROOT_DIR / "output" / "doc"
+CHINESE_FONT_CANDIDATES = [
+    "PingFang SC",
+    "Hiragino Sans GB",
+    "Songti SC",
+    "Noto Sans CJK SC",
+    "Microsoft YaHei",
+    "SimSun",
+]
+
+
+def _normalize_font_name(value):
+    return "".join(ch for ch in value.lower() if ch.isalnum())
+
+
+def _font_dirs():
+    if sys.platform == "darwin":
+        return [
+            Path("/System/Library/Fonts"),
+            Path("/Library/Fonts"),
+            Path.home() / "Library" / "Fonts",
+        ]
+    if os.name == "nt":
+        windir = Path(os.environ.get("WINDIR", r"C:\Windows"))
+        return [windir / "Fonts"]
+    return [
+        Path("/usr/share/fonts"),
+        Path("/usr/local/share/fonts"),
+        Path.home() / ".fonts",
+        Path.home() / ".local" / "share" / "fonts",
+    ]
+
+
+def _match_font_from_filesystem(candidate):
+    wanted = _normalize_font_name(candidate)
+    for font_dir in _font_dirs():
+        if not font_dir.exists():
+            continue
+        for pattern in ("*.ttf", "*.ttc", "*.otf", "*.dfont"):
+            for path in font_dir.glob(pattern):
+                stem = _normalize_font_name(path.stem)
+                if wanted in stem or stem in wanted:
+                    return candidate
+    return None
+
+
+def _match_font_with_fc_match(candidate):
+    fc_match = shutil.which("fc-match")
+    if not fc_match:
+        return None
+    try:
+        result = subprocess.run(
+            [fc_match, "-f", "%{family[0]}\n", candidate],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+    except (OSError, subprocess.CalledProcessError):
+        return None
+    matched = result.stdout.strip()
+    if not matched:
+        return None
+    wanted = _normalize_font_name(candidate)
+    got = _normalize_font_name(matched)
+    if wanted in got or got in wanted:
+        return candidate
+    return None
+
+
+@lru_cache(maxsize=1)
+def resolve_chinese_font():
+    for candidate in CHINESE_FONT_CANDIDATES:
+        if _match_font_with_fc_match(candidate) or _match_font_from_filesystem(candidate):
+            return candidate
+    return CHINESE_FONT_CANDIDATES[0]
+
+
+CHINESE_FONT = resolve_chinese_font()
 
 
 GROUPS = [
@@ -118,15 +201,15 @@ def set_cell_shading(cell, fill):
 
 def apply_page_setup(doc):
     section = doc.sections[0]
-    section.top_margin = Inches(0.7)
-    section.bottom_margin = Inches(0.7)
-    section.left_margin = Inches(0.75)
-    section.right_margin = Inches(0.75)
+    section.top_margin = Inches(0.6)
+    section.bottom_margin = Inches(0.6)
+    section.left_margin = Inches(0.7)
+    section.right_margin = Inches(0.7)
 
     normal = doc.styles["Normal"]
     normal.font.name = "Aptos"
-    normal._element.rPr.rFonts.set(qn("w:eastAsia"), "Microsoft YaHei")
-    normal.font.size = Pt(10)
+    normal._element.rPr.rFonts.set(qn("w:eastAsia"), CHINESE_FONT)
+    normal.font.size = Pt(9.5)
 
 
 def set_east_asia_font(run, font_name):
@@ -136,33 +219,37 @@ def set_east_asia_font(run, font_name):
     if rfonts is None:
         rfonts = OxmlElement("w:rFonts")
         rpr.append(rfonts)
+    rfonts.set(qn("w:ascii"), font_name)
+    rfonts.set(qn("w:hAnsi"), font_name)
     rfonts.set(qn("w:eastAsia"), font_name)
+    rfonts.set(qn("w:cs"), font_name)
 
 
 def add_title(doc, title):
     p = doc.add_paragraph()
     p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    p.paragraph_format.space_after = Pt(0)
     r = p.add_run(title)
     r.bold = True
-    r.font.size = Pt(18)
+    r.font.size = Pt(17)
     r.font.color.rgb = RGBColor(31, 78, 121)
-    set_east_asia_font(r, "Microsoft YaHei")
+    set_east_asia_font(r, CHINESE_FONT)
 
 
 def add_intro(doc, purpose, instructions):
     p = doc.add_paragraph()
     r = p.add_run("Purpose / 填写目的: ")
     r.bold = True
-    set_east_asia_font(r, "Microsoft YaHei")
+    set_east_asia_font(r, CHINESE_FONT)
     r = p.add_run(purpose)
-    set_east_asia_font(r, "Microsoft YaHei")
+    set_east_asia_font(r, CHINESE_FONT)
 
     p = doc.add_paragraph()
     r = p.add_run("Instructions / 填写说明: ")
     r.bold = True
-    set_east_asia_font(r, "Microsoft YaHei")
+    set_east_asia_font(r, CHINESE_FONT)
     r = p.add_run(instructions)
-    set_east_asia_font(r, "Microsoft YaHei")
+    set_east_asia_font(r, CHINESE_FONT)
 
 
 def add_part_a_table(doc):

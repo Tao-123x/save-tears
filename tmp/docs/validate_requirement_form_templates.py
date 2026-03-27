@@ -3,7 +3,8 @@ from pathlib import Path
 from docx import Document
 
 
-OUTPUT_DIR = Path("/Users/tanxuebin/Downloads/up-clean/output/doc")
+ROOT_DIR = Path(__file__).resolve().parents[2]
+OUTPUT_DIR = ROOT_DIR / "output" / "doc"
 
 EXPECTED_DOCS = [
     {
