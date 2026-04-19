@@ -1,406 +1,261 @@
 <template>
-  <view class="login-page">
-    <!-- 背景图层 -->
-    <image 
-      class="bg-image" 
-      src="/static/images/bg_login.jpg" 
-      <!-- TODO: Replace background image here --> 
-      mode="aspectFill"
-    />
-    
-    <!-- 主内容区域 -->
-    <view class="content-wrapper">
-      <!-- Logo 头像区域 -->
-      <view class="logo-section">
-        <image 
-          class="logo-avatar" 
-          src="/static/images/logo_avatar.jpg" 
-          <!-- TODO: Replace logo avatar here --> 
-          mode="aspectFill"
-        />
-        <text class="welcome-text">Welcome to log in!</text>
+  <EditorialPage tone="mist">
+    <view class="auth-page">
+      <view class="auth-page__brand st-panel-raise">
+        <text class="st-kicker">SAVE TEARS</text>
+        <text class="st-display auth-page__headline">Quiet water management</text>
       </view>
 
-      <!-- 表单区域 -->
-      <view class="form-section">
-        <!-- 邮箱/用户名输入框 -->
-        <view class="input-wrapper">
-          <input 
-            class="input-field"
-            type="text"
-            placeholder="Email……"
-            placeholder-class="placeholder-text"
+      <view class="auth-card st-panel-raise">
+        <view class="auth-card__topline"></view>
+
+        <view class="auth-card__field-group">
+          <text class="auth-card__label">Username</text>
+          <input
             v-model="username"
+            class="st-field auth-card__field"
+            type="text"
+            placeholder="Room 302"
+            placeholder-class="st-field-placeholder"
           />
         </view>
 
-        <!-- 密码输入框 -->
-        <view class="input-wrapper">
-          <input 
-            class="input-field"
-            :type="showPassword ? 'text' : 'password'"
-            placeholder="Password……"
-            placeholder-class="placeholder-text"
-            v-model="password"
-          />
-        </view>
-
-        <!-- 记住我 & 忘记密码 -->
-        <view class="options-row">
-          <view class="remember-me" @tap="toggleRemember">
-            <view class="checkbox" :class="{ 'checked': rememberMe }">
-              <text v-if="rememberMe" class="check-icon">✓</text>
-            </view>
-            <text class="remember-text">Remember me</text>
+        <view class="auth-card__field-group">
+          <text class="auth-card__label">Password</text>
+          <view class="auth-card__password">
+            <input
+              v-model="password"
+              class="st-field auth-card__field"
+              :password="!showPassword"
+              placeholder="••••••••"
+              placeholder-class="st-field-placeholder"
+            />
+            <text class="auth-card__toggle" @tap="showPassword = !showPassword">
+              {{ showPassword ? 'Hide' : 'Show' }}
+            </text>
           </view>
-          <text class="forget-password" @tap="handleForgetPassword">Forget password?</text>
         </view>
 
-        <!-- 登录按钮 -->
-        <view class="login-btn" @tap="handleLogin">
-          <text class="login-btn-text">Log in</text>
-          <text class="arrow-icon">→</text>
+        <view class="auth-card__row" @tap="rememberMe = !rememberMe">
+          <view class="auth-card__remember">
+            <view class="auth-card__check" :class="{ 'auth-card__check--active': rememberMe }"></view>
+            <text class="auth-card__remember-text">Remember me</text>
+          </view>
         </view>
 
-        <!-- 错误/成功提示 -->
-        <view v-if="message" class="message-wrapper">
-          <text :class="['message', isSuccess ? 'success' : 'error']">{{ message }}</text>
+        <view class="auth-card__actions">
+          <view class="st-button auth-card__action" @tap="handleLogin">
+            {{ loading ? 'Signing in...' : 'Sign in' }}
+          </view>
+          <view class="st-button st-button--soft auth-card__action" @tap="goToRegister">Create account</view>
         </view>
 
-        <!-- 注册引导 -->
-        <view class="register-section">
-          <text class="register-hint">Don't have an account?</text>
-          <text class="register-link" @tap="goToRegister">Register</text>
-        </view>
+        <text v-if="message" class="auth-card__message" :class="{ 'auth-card__message--error': !isSuccess }">
+          {{ message }}
+        </text>
       </view>
     </view>
-
-    <!-- 底部安全区域 -->
-    <view class="safe-area-bottom"></view>
-  </view>
+  </EditorialPage>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
-import { loginUser } from '@/api/index';
+import { ref } from 'vue';
+import { onShow } from '@dcloudio/uni-app';
 
-// 响应式数据
+import EditorialPage from '@/components/EditorialPage.vue';
+import { loginUser } from '@/api/index';
+import { getStoredUser, saveStoredUser } from '@/utils/session';
+
 const username = ref('');
 const password = ref('');
-const message = ref('');
-const isSuccess = ref(false);
 const rememberMe = ref(false);
 const showPassword = ref(false);
+const loading = ref(false);
+const message = ref('');
+const isSuccess = ref(false);
 
-// 切换记住我
-const toggleRemember = () => {
-  rememberMe.value = !rememberMe.value;
-};
-
-// 忘记密码
-const handleForgetPassword = () => {
-  uni.showToast({
-    title: '请联系管理员重置密码',
-    icon: 'none',
-    duration: 2000
-  });
-};
-
-// 登录处理
-const handleLogin = async () => {
-  // 表单验证
-  if (!username.value.trim()) {
-    uni.showToast({ title: '请输入用户名', icon: 'none' });
-    return;
-  }
-  
-  if (!password.value.trim()) {
-    uni.showToast({ title: '请输入密码', icon: 'none' });
-    return;
-  }
-
-  message.value = '';
-  isSuccess.value = false;
-
-  uni.showLoading({ title: '登录中...' });
-
-  try {
-    const result = await loginUser(username.value, password.value);
-    
-    uni.hideLoading();
-    
-    message.value = `登录成功，欢迎 ${result.username}！`;
-    isSuccess.value = true;
-    
-    // 使用微信小程序的存储方式
-    uni.setStorageSync('user', JSON.stringify(result));
-    
-    // 如果勾选了记住我，存储用户名
-    if (rememberMe.value) {
-      uni.setStorageSync('remembered_username', username.value);
-    } else {
-      uni.removeStorageSync('remembered_username');
-    }
-
-    // 跳转到首页
-    setTimeout(() => {
-      uni.switchTab({ url: '/pages/home/index' });
-    }, 1000);
-    
-  } catch (error: any) {
-    uni.hideLoading();
-    message.value = `登录失败: ${error.message || '网络错误'}`;
-    isSuccess.value = false;
-    
-    uni.showToast({
-      title: error.message || '登录失败',
-      icon: 'none',
-      duration: 2000
-    });
-  }
-};
-
-// 跳转注册页
-const goToRegister = () => {
-  uni.navigateTo({ url: '/pages/register/index' });
-};
-
-// 页面加载时检查是否有记住的用户名
-onMounted(() => {
+onShow(() => {
   const rememberedUsername = uni.getStorageSync('remembered_username');
   if (rememberedUsername) {
     username.value = rememberedUsername;
     rememberMe.value = true;
   }
+
+  const existingUser = getStoredUser();
+  if (existingUser?.username) {
+    uni.switchTab({ url: '/pages/home/index' });
+  }
 });
+
+async function handleLogin() {
+  if (!username.value.trim()) {
+    uni.showToast({ title: '请输入用户名', icon: 'none' });
+    return;
+  }
+
+  if (!password.value.trim()) {
+    uni.showToast({ title: '请输入密码', icon: 'none' });
+    return;
+  }
+
+  loading.value = true;
+  message.value = '';
+  isSuccess.value = false;
+
+  try {
+    const result = await loginUser(username.value.trim(), password.value);
+    saveStoredUser(result);
+
+    if (rememberMe.value) {
+      uni.setStorageSync('remembered_username', username.value.trim());
+    } else {
+      uni.removeStorageSync('remembered_username');
+    }
+
+    message.value = `欢迎回来，${result.username}。`;
+    isSuccess.value = true;
+    uni.showToast({ title: '登录成功', icon: 'success' });
+
+    setTimeout(() => {
+      uni.switchTab({ url: '/pages/home/index' });
+    }, 420);
+  } catch (error: any) {
+    message.value = error?.message || '登录失败，请检查网络或账号信息。';
+    isSuccess.value = false;
+    uni.showToast({ title: message.value, icon: 'none' });
+  } finally {
+    loading.value = false;
+  }
+}
+
+function goToRegister() {
+  uni.navigateTo({ url: '/pages/register/index' });
+}
 </script>
 
 <style scoped>
-/* ==================== 页面容器 ==================== */
-.login-page {
+.auth-page {
+  padding-top: 28rpx;
+}
+
+.auth-page__brand {
+  padding: 26rpx 8rpx 30rpx;
+}
+
+.auth-page__headline {
+  margin-top: 14rpx;
+  max-width: 440rpx;
+  font-size: 66rpx;
+}
+
+.auth-page__subtitle {
+  margin-top: 18rpx;
+  max-width: 520rpx;
+}
+
+.auth-card {
   position: relative;
-  width: 100%;
-  min-height: 100vh;
-  background: #FFFFFF;
+  margin-top: 30rpx;
+  padding: 34rpx 28rpx 30rpx;
+  border-radius: var(--st-radius-xl);
+  background: rgba(255, 255, 255, 0.92);
+  border: 1rpx solid var(--st-line);
+  box-shadow: var(--st-shadow);
   overflow: hidden;
 }
 
-/* ==================== 背景图片 ==================== */
-.bg-image {
+.auth-card__topline {
   position: absolute;
-  width: 1752rpx;
-  height: 3144rpx;
-  left: -546rpx;
-  top: -1068rpx;
-  opacity: 0.6;
+  left: 22rpx;
+  right: 22rpx;
+  top: 12rpx;
+  height: 1rpx;
+  border-radius: 999rpx;
+  background: rgba(255, 255, 255, 0.84);
 }
 
-/* ==================== 内容包装器 ==================== */
-.content-wrapper {
+.auth-card__field-group + .auth-card__field-group {
+  margin-top: 22rpx;
+}
+
+.auth-card__label {
+  display: block;
+  margin-bottom: 12rpx;
+  font-size: 22rpx;
+  color: var(--st-text-soft);
+}
+
+.auth-card__field {
+  border-radius: 22rpx;
+}
+
+.auth-card__password {
   position: relative;
-  z-index: 10;
-  padding-top: 200rpx;
-  padding-bottom: env(safe-area-inset-bottom);
 }
 
-/* ==================== Logo区域 ==================== */
-.logo-section {
-  display: flex;
-  align-items: center;
-  padding: 0 70rpx;
-  margin-bottom: 100rpx;
-}
-
-.logo-avatar {
-  width: 196rpx;
-  height: 196rpx;
-  border-radius: 50%;
-  box-shadow: 0 8rpx 8rpx rgba(0, 0, 0, 0.25);
-}
-
-.welcome-text {
-  margin-left: 30rpx;
-  font-family: 'Inder', 'PingFang SC', sans-serif;
-  font-style: normal;
-  font-weight: 400;
-  font-size: 48rpx;
-  line-height: 60rpx;
-  text-align: center;
-  color: #000000;
-}
-
-/* ==================== 表单区域 ==================== */
-.form-section {
-  padding: 0 74rpx;
-}
-
-.input-wrapper {
-  margin-bottom: 40rpx;
-}
-
-.input-field {
-  width: 100%;
-  height: 90rpx;
-  background: rgba(217, 217, 217, 0.5);
-  border: 1rpx solid #605F5F;
-  box-shadow: 0 8rpx 8rpx rgba(0, 0, 0, 0.25);
-  border-radius: 46rpx;
-  padding: 0 40rpx;
-  box-sizing: border-box;
-  font-family: 'Inder', 'PingFang SC', sans-serif;
-  font-size: 32rpx;
-  color: #000000;
-}
-
-.placeholder-text {
-  font-family: 'Inder', 'PingFang SC', sans-serif;
-  font-style: normal;
-  font-weight: 400;
-  font-size: 32rpx;
-  line-height: 40rpx;
-  color: #000000;
-  opacity: 0.5;
-}
-
-/* ==================== 选项行 ==================== */
-.options-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 50rpx;
-  padding: 0 10rpx;
-}
-
-.remember-me {
-  display: flex;
-  align-items: center;
-}
-
-.checkbox {
-  width: 36rpx;
-  height: 34rpx;
-  background: #D9D9D9;
-  border: 4rpx solid #6B6767;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.checkbox.checked {
-  background: #3884F5;
-  border-color: #3884F5;
-}
-
-.check-icon {
-  color: #FFFFFF;
+.auth-card__toggle {
+  position: absolute;
+  right: 22rpx;
+  top: 50%;
+  transform: translateY(-50%);
   font-size: 24rpx;
-  font-weight: bold;
+  color: var(--st-accent-deep);
 }
 
-.remember-text {
-  margin-left: 16rpx;
-  font-family: 'Inder', 'PingFang SC', sans-serif;
-  font-style: normal;
-  font-weight: 400;
-  font-size: 28rpx;
-  line-height: 36rpx;
-  color: #4E4949;
-}
-
-.forget-password {
-  font-family: 'Inder', 'PingFang SC', sans-serif;
-  font-style: normal;
-  font-weight: 400;
-  font-size: 28rpx;
-  line-height: 36rpx;
-  color: #236DB3;
-}
-
-/* ==================== 登录按钮 ==================== */
-.login-btn {
+.auth-card__row {
   display: flex;
   align-items: center;
-  justify-content: center;
-  width: 344rpx;
-  height: 100rpx;
-  margin: 0 auto;
-  background: rgba(56, 132, 245, 0.8);
-  box-shadow: 0 8rpx 8rpx rgba(0, 0, 0, 0.25);
-  border-radius: 34rpx;
+  justify-content: space-between;
+  gap: 20rpx;
+  margin-top: 24rpx;
 }
 
-.login-btn:active {
-  opacity: 0.8;
-  transform: scale(0.98);
-}
-
-.login-btn-text {
-  font-family: 'Inder', 'PingFang SC', sans-serif;
-  font-style: normal;
-  font-weight: 400;
-  font-size: 48rpx;
-  line-height: 60rpx;
-  color: #000000;
-}
-
-.arrow-icon {
-  margin-left: 20rpx;
-  font-size: 40rpx;
-  color: #000000;
-  font-weight: bold;
-}
-
-/* ==================== 消息提示 ==================== */
-.message-wrapper {
-  margin-top: 30rpx;
-  text-align: center;
-}
-
-.message {
-  font-family: 'Inder', 'PingFang SC', sans-serif;
-  font-size: 28rpx;
-  line-height: 36rpx;
-}
-
-.message.success {
-  color: #0E7022;
-}
-
-.message.error {
-  color: #B80F0F;
-}
-
-/* ==================== 注册引导 ==================== */
-.register-section {
+.auth-card__remember {
   display: flex;
-  justify-content: center;
   align-items: center;
-  margin-top: 80rpx;
+  gap: 14rpx;
 }
 
-.register-hint {
-  font-family: 'Inder', 'PingFang SC', sans-serif;
-  font-style: normal;
-  font-weight: 400;
-  font-size: 28rpx;
-  line-height: 36rpx;
-  color: #998E8E;
+.auth-card__check {
+  width: 22rpx;
+  height: 22rpx;
+  border-radius: 50%;
+  background: rgba(47, 140, 255, 0.14);
+  box-shadow: inset 0 0 0 2rpx rgba(47, 140, 255, 0.28);
+  transition: background 180ms ease, box-shadow 180ms ease, transform 180ms ease;
 }
 
-.register-link {
-  margin-left: 10rpx;
-  font-family: 'Inder', 'PingFang SC', sans-serif;
-  font-style: normal;
-  font-weight: 400;
-  font-size: 28rpx;
-  line-height: 36rpx;
-  color: #000000;
-  text-decoration: underline;
+.auth-card__check--active {
+  background: var(--st-accent);
+  box-shadow: 0 0 18rpx rgba(47, 140, 255, 0.3);
+  transform: scale(1.04);
 }
 
-/* ==================== 底部安全区域 ==================== */
-.safe-area-bottom {
-  height: constant(safe-area-inset-bottom);
-  height: env(safe-area-inset-bottom);
+.auth-card__remember-text,
+.auth-card__row-note {
+  font-size: 24rpx;
+  color: var(--st-text-soft);
+}
+
+.auth-card__actions {
+  display: grid;
+  gap: 16rpx;
+  margin-top: 34rpx;
+}
+
+.auth-card__action {
+  width: 100%;
+}
+
+.auth-card__message {
+  display: block;
+  margin-top: 20rpx;
+  font-size: 24rpx;
+  line-height: 1.5;
+  color: var(--st-success);
+}
+
+.auth-card__message--error {
+  color: #b45f59;
 }
 </style>

@@ -1,15 +1,20 @@
+import os
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import create_engine, Column, Integer, String
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy.orm import declarative_base, sessionmaker, Session
 from api import api_router # 导入 api_router
 
 # ==================== 1. 基础配置 ====================
 # 连接数据库
-SQLALCHEMY_DATABASE_URL = "mysql+pymysql://root:root@127.0.0.1:3306/save_tears"
+SQLALCHEMY_DATABASE_URL = os.getenv("SAVE_TEARS_DB_URL", "sqlite:///./save_tears.db")
 
-engine = create_engine(SQLALCHEMY_DATABASE_URL)
+engine_kwargs = {}
+if SQLALCHEMY_DATABASE_URL.startswith("sqlite"):
+    engine_kwargs["connect_args"] = {"check_same_thread": False}
+
+engine = create_engine(SQLALCHEMY_DATABASE_URL, **engine_kwargs)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 

@@ -5,7 +5,6 @@ Save Tears 项目启动手册
 
 - Python 3.8+ (用于后端)
 - Node.js 14+ (用于前端和小程序)
-- MySQL 8.0+ (数据库)
 - 微信开发者工具 (用于预览小程序)
 
 ---
@@ -14,21 +13,20 @@ Save Tears 项目启动手册
 
 后端提供 API 服务，必须首先启动。
 步骤
-1. 启动 MySQL 服务
-   如果不确定是否已启动，运行：
-   ```bash
-   brew services start mysql
-   ```
-   注意: 本项目配置为使用 `root` 用户且**无密码**连接。如果你的数据库有密码，请修改 `save_tears_backend/main.py` 和 `api.py` 中的 `SQLALCHEMY_DATABASE_URL`。
-
-2. **进入后端目录**
+1. **进入后端目录**
    ```bash
    cd save_tears_backend
    ```
 
-3. **激活虚拟环境**
+2. **创建并激活虚拟环境**
    ```bash
-   source venv/bin/activate
+   python3 -m venv .venv
+   source .venv/bin/activate
+   ```
+
+3. **安装依赖**
+   ```bash
+   pip install -r requirements.txt
    ```
 
 4. **启动服务**
@@ -37,6 +35,9 @@ Save Tears 项目启动手册
    ```
 
 **成功标志**: 终端显示 `Uvicorn running on http://0.0.0.0:8000`。
+
+默认情况下，后端会使用当前目录下的 `save_tears.db` SQLite 数据库文件。
+如果你想改用 MySQL，请在启动前设置 `SAVE_TEARS_DB_URL`。
 
 ---
 
@@ -81,14 +82,13 @@ Save Tears 项目启动手册
 
 3. **编译为微信小程序**
    ```bash
-   npm run dev:mp-weixin
+   npm run build:mp-weixin
    ```
-   *保持此终端窗口开启，它会实时监听修改并重新编译。*
 
 4. **导入微信开发者工具**
    - 打开 **微信开发者工具**。
    - 点击 **导入项目**。
-   - 选择目录：`save_tears_miniprogram/dist/dev/mp-weixin`。
+   - 选择目录：`save_tears_miniprogram/dist/build/mp-weixin`。
    - **AppID**: 使用测试号或你自己的 AppID。
 
 **成功标志**: 微信开发者工具中能正常显示页面预览。
@@ -97,10 +97,11 @@ Save Tears 项目启动手册
 
 ## 常见问题排查
 
-**Q: 后端报错 `Access denied for user 'root'@'localhost'`**
-A: 数据库密码错误。
-- 检查 MySQL 是否运行。
-- 确认你的 MySQL root 密码。如果是无密码，代码已配置好。如果有密码，请在 `main.py` 中更新连接字符串：`mysql+pymysql://root:你的密码@127.0.0.1:3306/save_tears`。
+**Q: 后端想改用 MySQL**
+A: 启动前设置环境变量 `SAVE_TEARS_DB_URL`，例如：
+```bash
+export SAVE_TEARS_DB_URL="mysql+pymysql://root:你的密码@127.0.0.1:3306/save_tears"
+```
 
 **Q: 端口被占用 `Address already in use`**
 A: 之前的服务没关掉。
@@ -121,7 +122,6 @@ This guide will walk you through how to start the **Backend**, **Web Frontend**,
 
 - **Python 3.8+** (for the backend)
 - **Node.js 14+** (for frontend and mini program)
-- **MySQL 8.0+** (database)
 - **WeChat Developer Tools** (for previewing the mini program)
 
 ---
@@ -131,21 +131,20 @@ This guide will walk you through how to start the **Backend**, **Web Frontend**,
 The backend provides API services and must be started first.
 
 ### Steps
-1. **Start MySQL Service**
-   If you're unsure if it's running, execute:
-   ```bash
-   brew services start mysql
-   ```
-   > **Note**: This project is configured to connect using the `root` user with **no password**. If your database has a password, please modify the `SQLALCHEMY_DATABASE_URL` in `save_tears_backend/main.py` and `api.py`.
-
-2. **Enter the Backend Directory**
+1. **Enter the Backend Directory**
    ```bash
    cd save_tears_backend
    ```
 
-3. **Activate the Virtual Environment**
+2. **Create and activate a virtual environment**
    ```bash
-   source venv/bin/activate
+   python3 -m venv .venv
+   source .venv/bin/activate
+   ```
+
+3. **Install dependencies**
+   ```bash
+   pip install -r requirements.txt
    ```
 
 4. **Start the Service**
@@ -154,6 +153,9 @@ The backend provides API services and must be started first.
    ```
 
 **Success Indicator**: The terminal displays `Uvicorn running on http://0.0.0.0:8000`.
+
+By default, the backend uses a local SQLite database file named `save_tears.db`.
+If you want to use MySQL instead, set `SAVE_TEARS_DB_URL` before starting the server.
 
 ---
 
@@ -198,14 +200,13 @@ This is the mini-program project developed based on uni-app.
 
 3. **Compile for WeChat Mini Program**
    ```bash
-   npm run dev:mp-weixin
+   npm run build:mp-weixin
    ```
-   *Keep this terminal window open; it will listen for changes and recompile in real-time.*
 
 4. **Import into WeChat Developer Tools**
    - Open **WeChat Developer Tools**.
    - Click **Import Project**.
-   - Select the directory: `save_tears_miniprogram/dist/dev/mp-weixin`.
+   - Select the directory: `save_tears_miniprogram/dist/build/mp-weixin`.
    - **AppID**: Use a test AppID or your own AppID.
 
 **Success Indicator**: The pages can be previewed normally in WeChat Developer Tools.
@@ -214,10 +215,11 @@ This is the mini-program project developed based on uni-app.
 
 ##  Troubleshooting
 
-**Q: Backend reports `Access denied for user 'root'@'localhost'`**
-A: Incorrect database password.
-- Check if MySQL is running.
-- Verify your MySQL root password. If there is no password, the code is already configured correctly. If you have a password, update the connection string in `main.py`: `mysql+pymysql://root:YOUR_PASSWORD@127.0.0.1:3306/save_tears`.
+**Q: I want to use MySQL instead of SQLite**
+A: Set the `SAVE_TEARS_DB_URL` environment variable before starting the backend, for example:
+```bash
+export SAVE_TEARS_DB_URL="mysql+pymysql://root:YOUR_PASSWORD@127.0.0.1:3306/save_tears"
+```
 
 **Q: Port already in use `Address already in use`**
 A: A previous service was not shut down properly.
