@@ -1,142 +1,303 @@
 <template>
-  <view class="profile-page">
-    <!-- 顶部分隔线 -->
-    <view class="top-divider"></view>
+  <EditorialPage tone="mist">
+    <view class="profile-page">
+      <view class="profile-page__header st-panel-raise">
+        <text class="st-kicker">Account</text>
+        <text class="st-display profile-page__headline">Resident profile</text>
+      </view>
 
-    <!-- 头部用户信息区域 -->
-    <view class="header-section">
-      <view class="user-info-row">
-        <image class="user-avatar" src="/static/images/logo_avatar.jpg" mode="aspectFill" /> <!-- TODO: Replace user avatar here -->
-        <view class="user-details">
-          <text class="welcome-text">Welcome back.</text>
-          <text class="username-text">{{ username }}.</text>
+      <view class="profile-hero st-panel-raise">
+        <view class="profile-hero__topline"></view>
+        <view class="profile-hero__avatar">{{ avatarLabel }}</view>
+        <view class="profile-hero__copy">
+          <text class="profile-hero__name">{{ currentUser?.username || 'Guest' }}</text>
+          <text class="profile-hero__meta">
+            {{ currentUser?.room_number ? `Room ${currentUser.room_number}` : 'No room linked yet' }}
+            <text v-if="isAdmin"> · admin access</text>
+          </text>
         </view>
-        <text class="notification-icon">🔔</text>
+        <view v-if="isAdmin" class="profile-hero__admin" @tap="goToAdmin">Admin entry</view>
+      </view>
+
+      <view class="profile-setting st-panel-raise">
+        <view class="profile-setting__topline"></view>
+        <view class="profile-setting__row">
+          <view class="profile-setting__copy">
+            <text class="profile-setting__title">Billing alerts</text>
+            <text class="profile-setting__desc">Monthly and due-date reminders</text>
+          </view>
+          <switch :checked="dailyDigestEnabled" color="#2f8cff" @change="handleToggle('dailyDigestEnabled', $event)" />
+        </view>
+      </view>
+
+      <view class="profile-setting st-panel-raise">
+        <view class="profile-setting__topline"></view>
+        <view class="profile-setting__row">
+          <view class="profile-setting__copy">
+            <text class="profile-setting__title">Quality alerts</text>
+            <text class="profile-setting__desc">Only show unusual readings</text>
+          </view>
+          <switch :checked="anomalyAlertsEnabled" color="#2f8cff" @change="handleToggle('anomalyAlertsEnabled', $event)" />
+        </view>
+      </view>
+
+      <view class="profile-system st-panel-raise">
+        <view class="profile-system__topline"></view>
+        <text class="profile-system__title">{{ isAdmin ? 'System' : 'Support' }}</text>
+        <template v-if="isAdmin">
+          <text class="profile-system__label">Service endpoint</text>
+          <input
+            v-model="apiBaseUrl"
+            class="st-field profile-system__field"
+            type="text"
+            placeholder="https://internal.save-tears.local"
+            placeholder-class="st-field-placeholder"
+          />
+          <text class="profile-system__resolved">Current connection: {{ resolvedApiBaseUrl }}</text>
+          <view class="profile-system__actions">
+            <view class="st-button profile-system__action" @tap="handleSaveApiBaseUrl">Save connection</view>
+            <view class="st-button st-button--soft profile-system__action" @tap="handleHelp">Help centre</view>
+          </view>
+          <view class="profile-system__actions profile-system__actions--secondary">
+            <view class="st-button st-button--soft profile-system__action" @tap="handleResetApiBaseUrl">Reset connection</view>
+            <view class="st-button st-button--soft profile-system__action" @tap="handleLogout">Log out</view>
+          </view>
+        </template>
+        <view v-else class="profile-system__actions profile-system__actions--single">
+          <view class="st-button st-button--soft profile-system__action" @tap="handleHelp">Help centre</view>
+          <view class="st-button st-button--soft profile-system__action" @tap="handleLogout">Log out</view>
+        </view>
       </view>
     </view>
-
-    <!-- 公告栏 -->
-    <view class="announcement-bar">
-      <text class="announcement-text">📢 Announcement</text>
-    </view>
-
-    <!-- 功能入口区域 -->
-    <view class="features-section">
-      <view class="feature-card" @tap="goToPage('operation')">
-        <text class="feature-emoji">⚙️</text>
-        <text class="feature-text">Operation</text>
-      </view>
-      <view class="feature-card" @tap="goToPage('target')">
-        <text class="feature-emoji">🎯</text>
-        <text class="feature-text">Target</text>
-      </view>
-      <view class="feature-card" @tap="goToPage('points')">
-        <text class="feature-emoji">🏆</text>
-        <text class="feature-text">Point Center</text>
-      </view>
-    </view>
-
-    <!-- 圆形图标区域 -->
-    <view class="icons-section">
-      <view class="icon-item" @tap="goToPage('attendance')">
-        <view class="icon-circle"><text class="icon-emoji">📅</text></view>
-        <text class="icon-text">Attendance</text>
-      </view>
-      <view class="icon-item" @tap="goToPage('chart')">
-        <view class="icon-circle"><text class="icon-emoji">📊</text></view>
-        <text class="icon-text">Chart</text>
-      </view>
-      <view class="icon-item" @tap="goToPage('device')">
-        <view class="icon-circle"><text class="icon-emoji">📱</text></view>
-        <text class="icon-text">Device</text>
-      </view>
-      <view class="icon-item" @tap="goToPage('personalization')">
-        <view class="icon-circle"><text class="icon-emoji">🎨</text></view>
-        <text class="icon-text">Personalization</text>
-      </view>
-    </view>
-
-    <!-- 分隔线 -->
-    <view class="section-divider"></view>
-
-    <!-- 水源切换区域 -->
-    <view class="water-switch-section">
-      <view class="switch-card" :class="{ active: waterType === 'government' }" @tap="waterType = 'government'">
-        <text class="switch-text">Government Water</text>
-      </view>
-      <view class="switch-card grey" :class="{ active: waterType === 'grey' }" @tap="waterType = 'grey'">
-        <text class="switch-text white">Grey Water</text>
-      </view>
-    </view>
-
-    <!-- 数据展示区域 -->
-    <view class="data-section">
-      <text class="data-title">💧 Water Usage Chart</text>
-      <view class="chart-placeholder">
-        <text class="chart-text">📈 Chart visualization here</text>
-      </view>
-    </view>
-
-    <!-- 底部安全区域 -->
-    <view class="safe-area-bottom"></view>
-  </view>
+  </EditorialPage>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { computed, ref } from 'vue';
+import { onShow } from '@dcloudio/uni-app';
 
-const username = ref('xxxxxxx');
-const waterType = ref('government');
+import EditorialPage from '@/components/EditorialPage.vue';
+import { getResolvedApiBaseUrl, getStoredApiBaseUrl, setApiBaseUrl } from '@/api/index';
+import { getResidentPreferences, saveResidentPreferences } from '@/utils/preferences';
+import { clearStoredUser, getStoredUser, isAdminUser, type StoredUser } from '@/utils/session';
 
-onMounted(() => {
-  const userInfo = uni.getStorageSync('user');
-  if (userInfo) {
-    try {
-      const user = JSON.parse(userInfo);
-      username.value = user.username || 'xxxxxxx';
-    } catch (e) {
-      console.error('解析用户信息失败', e);
-    }
-  }
+const currentUser = ref<StoredUser | null>(null);
+const apiBaseUrl = ref('');
+const resolvedApiBaseUrl = ref(getResolvedApiBaseUrl());
+const dailyDigestEnabled = ref(true);
+const anomalyAlertsEnabled = ref(true);
+
+const isAdmin = computed(() => isAdminUser(currentUser.value));
+const avatarLabel = computed(() => (currentUser.value?.username || 'G').slice(0, 1).toUpperCase());
+
+onShow(() => {
+  currentUser.value = getStoredUser();
+  apiBaseUrl.value = getStoredApiBaseUrl();
+  resolvedApiBaseUrl.value = getResolvedApiBaseUrl();
+
+  const preferences = getResidentPreferences();
+  dailyDigestEnabled.value = preferences.dailyDigestEnabled;
+  anomalyAlertsEnabled.value = preferences.anomalyAlertsEnabled;
 });
 
-const goToPage = (page: string) => {
-  uni.showToast({ title: '功能开发中...', icon: 'none' });
-};
+function handleToggle(key: 'dailyDigestEnabled' | 'anomalyAlertsEnabled', event: any) {
+  if (key === 'dailyDigestEnabled') {
+    dailyDigestEnabled.value = event.detail.value;
+  } else {
+    anomalyAlertsEnabled.value = event.detail.value;
+  }
+
+  saveResidentPreferences({
+    dailyDigestEnabled: dailyDigestEnabled.value,
+    anomalyAlertsEnabled: anomalyAlertsEnabled.value,
+  });
+}
+
+function handleSaveApiBaseUrl() {
+  setApiBaseUrl(apiBaseUrl.value.trim());
+  resolvedApiBaseUrl.value = getResolvedApiBaseUrl();
+  uni.showToast({ title: '连接设置已保存', icon: 'success' });
+}
+
+function handleResetApiBaseUrl() {
+  setApiBaseUrl('');
+  apiBaseUrl.value = '';
+  resolvedApiBaseUrl.value = getResolvedApiBaseUrl();
+  uni.showToast({ title: '已恢复默认连接', icon: 'success' });
+}
+
+function handleHelp() {
+  uni.showToast({
+    title: '请联系管理员或项目维护人',
+    icon: 'none',
+  });
+}
+
+function handleLogout() {
+  clearStoredUser();
+  uni.showToast({ title: '已退出登录', icon: 'success' });
+  setTimeout(() => {
+    uni.navigateTo({ url: '/pages/login/index' });
+  }, 280);
+}
+
+function goToAdmin() {
+  uni.navigateTo({ url: '/pages/admin/index' });
+}
 </script>
 
 <style scoped>
-.profile-page { position: relative; width: 100%; min-height: 100vh; background: #FFFFFF; }
-.top-divider { height: 14rpx; background: #D9D9D9; margin-top: 160rpx; }
-.header-section { padding: 30rpx 56rpx; }
-.user-info-row { display: flex; align-items: center; }
-.user-avatar { width: 118rpx; height: 112rpx; border-radius: 50%; box-shadow: 0 8rpx 8rpx rgba(0, 0, 0, 0.25); }
-.user-details { flex: 1; margin-left: 28rpx; }
-.welcome-text { display: block; font-size: 30rpx; color: rgba(67, 61, 61, 0.81); }
-.username-text { display: block; font-size: 32rpx; color: rgba(75, 66, 66, 0.95); margin-top: 6rpx; }
-.notification-icon { font-size: 50rpx; }
-.announcement-bar { height: 52rpx; background: #FFE2C1; display: flex; align-items: center; padding: 0 30rpx; }
-.announcement-text { font-size: 24rpx; color: #FF7124; text-shadow: 0 8rpx 8rpx rgba(0, 0, 0, 0.25); }
-.features-section { display: flex; justify-content: space-between; padding: 40rpx 56rpx; }
-.feature-card { width: 174rpx; height: 164rpx; border-radius: 34rpx; background: linear-gradient(135deg, #E8F4FD 0%, #D4E9F7 100%); box-shadow: 0 8rpx 8rpx rgba(0, 0, 0, 0.25); display: flex; flex-direction: column; align-items: center; justify-content: center; }
-.feature-emoji { font-size: 60rpx; }
-.feature-text { margin-top: 10rpx; font-weight: 500; font-size: 26rpx; color: #000000; }
-.icons-section { display: flex; justify-content: space-between; padding: 0 56rpx; margin-bottom: 30rpx; }
-.icon-item { display: flex; flex-direction: column; align-items: center; }
-.icon-circle { width: 126rpx; height: 126rpx; border-radius: 50%; background: linear-gradient(135deg, #F0F4F8 0%, #E4E8EC 100%); box-shadow: 0 8rpx 8rpx rgba(0, 0, 0, 0.25); display: flex; align-items: center; justify-content: center; }
-.icon-emoji { font-size: 50rpx; }
-.icon-text { margin-top: 12rpx; font-size: 22rpx; text-align: center; color: #000000; }
-.section-divider { height: 14rpx; background: #D9D9D9; }
-.water-switch-section { display: flex; justify-content: center; padding: 30rpx 52rpx; }
-.switch-card { width: 266rpx; height: 106rpx; background: #FFFFFF; border-radius: 34rpx; display: flex; align-items: center; justify-content: center; border: 2rpx solid #ccc; }
-.switch-card.active { background: rgba(91, 152, 242, 0.5); border-color: #5B98F2; }
-.switch-card.grey { background: #0F528D; margin-left: 20rpx; border-color: #0F528D; }
-.switch-card.grey.active { background: #3886CB; }
-.switch-text { font-weight: 500; font-size: 28rpx; text-align: center; color: #000000; }
-.switch-text.white { color: #FFFFFF; }
-.data-section { padding: 30rpx 56rpx; }
-.data-title { font-weight: 600; font-size: 32rpx; color: #000000; }
-.chart-placeholder { margin-top: 20rpx; height: 300rpx; background: linear-gradient(135deg, #E8F4FD 0%, #D4E9F7 100%); border-radius: 20rpx; display: flex; align-items: center; justify-content: center; }
-.chart-text { font-size: 28rpx; color: #666; }
-.safe-area-bottom { height: 200rpx; }
+.profile-page__header {
+  padding: 18rpx 6rpx 24rpx;
+}
+
+.profile-page__headline {
+  margin-top: 10rpx;
+}
+
+.profile-page__subline {
+  margin-top: 14rpx;
+}
+
+.profile-hero,
+.profile-setting,
+.profile-system {
+  position: relative;
+  margin-top: 18rpx;
+  border-radius: var(--st-radius-xl);
+  background: rgba(255, 255, 255, 0.94);
+  border: 1rpx solid var(--st-line);
+  box-shadow: var(--st-shadow-tight);
+  overflow: hidden;
+}
+
+.profile-hero {
+  display: grid;
+  grid-template-columns: 88rpx minmax(0, 1fr) auto;
+  gap: 18rpx;
+  align-items: center;
+  padding: 28rpx 24rpx;
+}
+
+.profile-setting {
+  padding: 24rpx;
+}
+
+.profile-system {
+  padding: 28rpx 24rpx 24rpx;
+}
+
+.profile-hero__topline,
+.profile-setting__topline,
+.profile-system__topline {
+  position: absolute;
+  left: 18rpx;
+  right: 18rpx;
+  top: 12rpx;
+  height: 1rpx;
+  border-radius: 999rpx;
+  background: rgba(255, 255, 255, 0.84);
+}
+
+.profile-hero__avatar {
+  width: 88rpx;
+  height: 88rpx;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(180deg, rgba(215, 238, 255, 1) 0%, rgba(196, 228, 255, 1) 100%);
+  color: var(--st-accent-deep);
+  font-family: var(--st-title-font);
+  font-size: 40rpx;
+  font-weight: 700;
+  box-shadow: 0 12rpx 24rpx rgba(47, 140, 255, 0.14);
+}
+
+.profile-hero__name {
+  display: block;
+  font-size: 38rpx;
+  font-weight: 700;
+  color: var(--st-text);
+}
+
+.profile-hero__meta {
+  display: block;
+  margin-top: 8rpx;
+  font-size: 24rpx;
+  line-height: 1.5;
+  color: var(--st-text-soft);
+}
+
+.profile-hero__admin {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 56rpx;
+  padding: 0 24rpx;
+  border-radius: 999rpx;
+  background: #eaf5ff;
+  color: var(--st-accent-deep);
+  font-size: 24rpx;
+  font-weight: 600;
+}
+
+.profile-setting__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24rpx;
+}
+
+.profile-setting__copy {
+  flex: 1;
+}
+
+.profile-setting__title,
+.profile-system__title {
+  display: block;
+  font-size: 30rpx;
+  font-weight: 700;
+  color: var(--st-text);
+}
+
+.profile-setting__desc,
+.profile-system__resolved {
+  display: block;
+  margin-top: 8rpx;
+  font-size: 22rpx;
+  line-height: 1.5;
+  color: var(--st-text-soft);
+}
+
+.profile-system__label {
+  display: block;
+  margin-top: 18rpx;
+  font-size: 22rpx;
+  color: var(--st-text-soft);
+}
+
+.profile-system__field {
+  margin-top: 12rpx;
+  border-radius: 22rpx;
+}
+
+.profile-system__actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14rpx;
+  margin-top: 20rpx;
+}
+
+.profile-system__actions--secondary {
+  margin-top: 14rpx;
+}
+
+.profile-system__actions--single {
+  margin-top: 20rpx;
+}
+
+.profile-system__action {
+  width: 100%;
+}
 </style>

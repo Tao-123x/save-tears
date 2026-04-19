@@ -1,5 +1,6 @@
 {
   "name": "uni-preset-vue",
+  "type": "module",
   "version": "0.0.0",
   "scripts": {
     "dev:custom": "uni -p",
@@ -34,6 +35,7 @@
     "build:quickapp-webview": "uni build -p quickapp-webview",
     "build:quickapp-webview-huawei": "uni build -p quickapp-webview-huawei",
     "build:quickapp-webview-union": "uni build -p quickapp-webview-union",
+    "test:unit": "node --experimental-strip-types --test tests/*.test.mts",
     "type-check": "vue-tsc --noEmit"
   },
   "dependencies": {

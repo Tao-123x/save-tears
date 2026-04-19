@@ -62,8 +62,11 @@ save_tears/
 
 ### Running the Backend
 1. Navigate to the directory: `cd save_tears_backend`
-2. Install dependencies: `pip install -r requirements.txt`
-3. Start the service: `uvicorn main:app --reload`
+2. Create a virtual environment: `python3 -m venv .venv && source .venv/bin/activate`
+3. Install dependencies: `pip install -r requirements.txt`
+4. Start the service: `python main.py`
+
+The backend now defaults to a local SQLite database file for local development. If you want to use MySQL instead, set `SAVE_TEARS_DB_URL` before starting the server.
 
 ### Running the Web Frontend
 1. Navigate to the directory: `cd save_tears_frontend`
@@ -73,7 +76,8 @@ save_tears/
 ### Running the Mini Program
 1. Navigate to the directory: `cd save_tears_miniprogram`
 2. Install dependencies: `npm install`
-3. Use WeChat Developer Tools or run `npm run dev:mp-weixin` to compile and run.
+3. Run `npm run build:mp-weixin`
+4. Import `save_tears_miniprogram/dist/build/mp-weixin` into WeChat Developer Tools.
 
 ---
 

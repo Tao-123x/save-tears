@@ -1,11 +1,42 @@
-// 定义后端 API 的基础 URL
-const BASE_URL = 'http://127.0.0.1:8000';
+import { getStoredUser } from '@/utils/session';
+
+// 默认指向当前电脑在热点网段中的地址，手机端不能用 127.0.0.1
+const DEFAULT_BASE_URL = 'http://172.20.10.11:8000';
+
+export interface LoginResponse {
+    msg: string;
+    username: string;
+    room_number: string;
+    role: string;
+    token: string;
+}
+
+export interface UserRecord {
+    username: string;
+    room_number?: string;
+    role?: string;
+    id?: number;
+}
+
+function getBaseUrl() {
+    const customBaseUrl = uni.getStorageSync('api_base_url');
+    if (!customBaseUrl) {
+        return DEFAULT_BASE_URL;
+    }
+
+    // 手机端如果还缓存了 localhost/127.0.0.1，会继续请求自己，直接回退到电脑地址
+    if (/^(https?:\/\/)?(localhost|127\.0\.0\.1)(:\d+)?(\/.*)?$/i.test(customBaseUrl)) {
+        return DEFAULT_BASE_URL;
+    }
+
+    return customBaseUrl;
+}
 
 // 辅助函数：处理 API 请求 (适配微信小程序 uni.request)
 function callApi(endpoint: string, method: 'GET' | 'POST' | 'PUT' | 'DELETE' = 'GET', data: any = null): Promise<any> {
     return new Promise((resolve, reject) => {
         const options: UniApp.RequestOptions = {
-            url: `${BASE_URL}${endpoint}`,
+            url: `${getBaseUrl()}${endpoint}`,
             method: method,
             header: {
                 'Content-Type': 'application/json',
@@ -25,6 +56,14 @@ function callApi(endpoint: string, method: 'GET' | 'POST' | 'PUT' | 'DELETE' = '
                 reject(err);
             }
         };
+
+        const currentUser = getStoredUser();
+        if (currentUser?.token) {
+            options.header = {
+                ...options.header,
+                Authorization: `Bearer ${currentUser.token}`,
+            };
+        }
 
         if (data) {
             options.data = data;
@@ -47,7 +86,7 @@ export const registerUser = (username: string, password: string, roomNumber: str
  * 登录用户
  */
 export const loginUser = (username: string, password: string) => {
-    return callApi('/login', 'POST', { username, password });
+    return callApi('/login', 'POST', { username, password }) as Promise<LoginResponse>;
 };
 
 // ==================== 水流量数据 API ====================
@@ -63,7 +102,12 @@ export const submitWaterFlow = (roomNumber: string, flowRate: number, timestamp:
  * 获取某个房间的水流量数据
  */
 export const getWaterFlow = (roomNumber: string) => {
-    return callApi(`/water_flow/${roomNumber}`);
+    return callApi(`/water_flow/${roomNumber}`) as Promise<Array<{
+        id?: number;
+        room_number?: string;
+        flow_rate: number;
+        timestamp: string;
+    }>>;
 };
 
 // ==================== 污水浊度数据 API ====================
@@ -79,7 +123,12 @@ export const submitSewageTurbidity = (roomNumber: string, turbidityValue: number
  * 获取某个房间的污水浊度数据
  */
 export const getSewageTurbidity = (roomNumber: string) => {
-    return callApi(`/sewage_turbidity/${roomNumber}`);
+    return callApi(`/sewage_turbidity/${roomNumber}`) as Promise<Array<{
+        id?: number;
+        room_number?: string;
+        turbidity_value: number;
+        timestamp: string;
+    }>>;
 };
 
 // ==================== 水费数据 API ====================
@@ -95,7 +144,12 @@ export const submitWaterBill = (roomNumber: string, amount: number, month: strin
  * 获取某个房间的水费数据
  */
 export const getWaterBill = (roomNumber: string) => {
-    return callApi(`/water_bill/${roomNumber}`);
+    return callApi(`/water_bill/${roomNumber}`) as Promise<Array<{
+        id?: number;
+        room_number?: string;
+        amount: number;
+        month: string;
+    }>>;
 };
 
 // ==================== 其他 API ====================
@@ -104,5 +158,17 @@ export const getWaterBill = (roomNumber: string) => {
  * 获取所有用户列表 (仅供管理员或测试使用)
  */
 export const getUsers = () => {
-    return callApi('/users');
+    return callApi('/users') as Promise<UserRecord[]>;
+};
+
+export const setApiBaseUrl = (baseUrl: string) => {
+    uni.setStorageSync('api_base_url', baseUrl);
+};
+
+export const getStoredApiBaseUrl = () => {
+    return uni.getStorageSync('api_base_url') || '';
+};
+
+export const getResolvedApiBaseUrl = () => {
+    return getBaseUrl();
 };

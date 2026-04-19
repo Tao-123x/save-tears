@@ -1,135 +1,337 @@
 <template>
-  <view class="admin-page">
-    <!-- 背景图层 -->
-    <image class="bg-image" src="/static/images/bg_admin.jpg" mode="aspectFill" /> <!-- TODO: Replace admin background here -->
-    
-    <!-- 顶部导航栏 -->
-    <view class="top-nav-bar">
-      <view class="nav-tab" :class="{ 'active': activeTab === 'home' }" @tap="switchTab('home')">
-        <text class="nav-tab-text">Home</text>
+  <EditorialPage tone="deep" compact>
+    <view class="admin-page">
+      <view class="admin-page__header st-panel-raise">
+        <text class="st-kicker">Admin</text>
+        <text class="st-display admin-page__headline">Compact control</text>
       </view>
-      <view class="nav-tab" :class="{ 'active': activeTab === 'explore' }" @tap="switchTab('explore')">
-        <text class="nav-tab-text">Explore</text>
-      </view>
-      <view class="nav-tab" :class="{ 'active': activeTab === 'settings' }" @tap="switchTab('settings')">
-        <text class="nav-tab-text">Settings</text>
-      </view>
-    </view>
 
-    <!-- 搜索框 -->
-    <view class="search-wrapper">
-      <view class="search-box">
-        <text class="search-icon">🔍</text>
-        <input class="search-input" type="text" placeholder="Search……" placeholder-class="search-placeholder" v-model="searchText" @confirm="handleSearch" />
-      </view>
-    </view>
+      <view v-if="loading" class="admin-page__loading st-panel-raise">正在整理住户列表...</view>
+      <EditorialEmptyState
+        v-else-if="errorMessage"
+        title="管理员数据暂时不可用"
+        :message="errorMessage"
+        action-text="重新加载"
+        @action="loadAdminDesk"
+      />
 
-    <!-- 统计卡片区域 -->
-    <view class="stats-section">
-      <view class="stat-card">
-        <text class="stat-title">Awaiting approval</text>
-        <text class="stat-value red">{{ awaitingApproval }}</text>
-      </view>
-      <view class="stat-card">
-        <text class="stat-title">Submitted today</text>
-        <text class="stat-value red">{{ submittedToday }}</text>
-      </view>
-    </view>
-
-    <!-- 申请人列表区域 -->
-    <view class="applicants-section">
-      <view class="table-header">
-        <text class="header-cell applicant">Applicant</text>
-        <text class="header-cell consumption">Water consumption</text>
-        <text class="header-cell operation">Operation</text>
-      </view>
-      <view class="divider thick"></view>
-      <scroll-view class="applicants-list" scroll-y :show-scrollbar="false">
-        <view class="applicant-row" v-for="(item, index) in applicantsList" :key="index">
-          <view class="applicant-cell">
-            <view class="avatar-placeholder"><text class="avatar-text">👤</text></view>
-            <text class="applicant-name">{{ item.name || 'xxxx' }}</text>
-          </view>
-          <text class="consumption-cell">{{ item.consumption || 'xx' }} L</text>
-          <text class="operation-cell" @tap="handleOperation(item)">⋯</text>
+      <template v-else>
+        <view class="admin-page__stats">
+          <AdminStatCard label="Residents" :value="String(overview.totalUsers)" />
+          <AdminStatCard label="Flags" :value="String(overview.roomsMissing.length)" />
+          <AdminStatCard label="Active" :value="activeRate" />
         </view>
-      </scroll-view>
-    </view>
 
-    <!-- 底部帮助中心 -->
-    <view class="help-center">
-      <text class="help-icon">❓</text>
-      <text class="help-text">Helping center</text>
-    </view>
+        <view class="admin-search st-panel-raise">
+          <view class="admin-search__topline"></view>
+          <input
+            v-model="searchText"
+            class="admin-search__field"
+            type="text"
+            placeholder="Search room or user"
+            placeholder-class="admin-search__placeholder"
+          />
+          <view class="admin-search__dot"></view>
+        </view>
 
-    <view class="safe-area-bottom"></view>
-  </view>
+        <view class="admin-list st-panel-raise">
+          <view class="admin-list__topline"></view>
+          <text class="admin-list__title">Resident list</text>
+
+          <EditorialEmptyState
+            v-if="!filteredUsers.length"
+            title="没有匹配的住户"
+            message="换一个用户名或房间号关键词试试。"
+          />
+
+          <template v-else>
+            <view v-for="user in filteredUsers" :key="`${user.username}-${user.room_number || 'none'}`" class="admin-list__row">
+              <view class="admin-list__identity">
+                <view class="admin-list__avatar">{{ user.username.slice(0, 1).toUpperCase() }}</view>
+                <view class="admin-list__copy">
+                  <text class="admin-list__name">{{ user.username }}</text>
+                </view>
+              </view>
+              <view class="admin-list__tag" :class="tagClass(user)">
+                {{ tagText(user) }}
+              </view>
+            </view>
+          </template>
+        </view>
+
+        <view class="admin-note st-panel-raise">
+          <view class="admin-note__topline"></view>
+          <text class="admin-note__title">Watchlist</text>
+          <text class="admin-note__copy">
+            {{ overview.roomsMissing.length ? `缺失房间号：${overview.roomsMissing.join('、')}` : '当前没有缺失房间号的账号。' }}
+          </text>
+        </view>
+      </template>
+    </view>
+  </EditorialPage>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
+import { onShow } from '@dcloudio/uni-app';
 
-const activeTab = ref('home');
+import AdminStatCard from '@/components/AdminStatCard.vue';
+import EditorialEmptyState from '@/components/EditorialEmptyState.vue';
+import EditorialPage from '@/components/EditorialPage.vue';
+import { getUsers, type UserRecord } from '@/api/index';
+import { buildAdminOverview } from '@/utils/insights';
+import { getStoredUser, isAdminUser } from '@/utils/session';
+
+const loading = ref(false);
+const errorMessage = ref('');
 const searchText = ref('');
-const awaitingApproval = ref(5);
-const submittedToday = ref(12);
+const users = ref<UserRecord[]>([]);
 
-const applicantsList = ref([
-  { id: 1, name: 'xxxx', consumption: 'xx', status: 'pending' },
-  { id: 2, name: 'xxxx', consumption: 'xx', status: 'pending' },
-  { id: 3, name: 'xxxx', consumption: 'xx', status: 'pending' },
-  { id: 4, name: 'xxxx', consumption: 'xx', status: 'pending' },
-  { id: 5, name: 'xxxx', consumption: 'xx', status: 'pending' },
-]);
-
-const switchTab = (tab: string) => { activeTab.value = tab; };
-const handleSearch = () => { if (searchText.value.trim()) uni.showToast({ title: `搜索: ${searchText.value}`, icon: 'none' }); };
-const handleOperation = (item: any) => {
-  uni.showActionSheet({
-    itemList: ['审批通过', '审批拒绝', '查看详情'],
-    success: (res) => {
-      const actions = ['已通过审批', '已拒绝申请', '查看详情'];
-      uni.showToast({ title: actions[res.tapIndex], icon: res.tapIndex === 0 ? 'success' : 'none' });
-    }
+const filteredUsers = computed(() => {
+  const keyword = searchText.value.trim().toLowerCase();
+  const sorted = [...users.value].sort((left, right) => {
+    if (isAdminRole(left.role) && !isAdminRole(right.role)) return -1;
+    if (!isAdminRole(left.role) && isAdminRole(right.role)) return 1;
+    return left.username.localeCompare(right.username);
   });
-};
+
+  if (!keyword) {
+    return sorted;
+  }
+
+  return sorted.filter((user) => {
+    return (
+      user.username.toLowerCase().includes(keyword) ||
+      String(user.room_number || '').toLowerCase().includes(keyword)
+    );
+  });
+});
+
+const overview = computed(() => buildAdminOverview(users.value));
+const activeRate = computed(() => {
+  if (!overview.value.totalUsers) {
+    return '0%';
+  }
+
+  return `${Math.round((overview.value.roomsConfigured / overview.value.totalUsers) * 100)}%`;
+});
+
+onShow(() => {
+  const user = getStoredUser();
+  if (!isAdminUser(user)) {
+    uni.showToast({ title: '普通住户无法查看管理员页', icon: 'none' });
+    setTimeout(() => {
+      uni.switchTab({ url: '/pages/home/index' });
+    }, 120);
+    return;
+  }
+
+  void loadAdminDesk();
+});
+
+async function loadAdminDesk() {
+  loading.value = true;
+  errorMessage.value = '';
+
+  try {
+    const data = await getUsers();
+    users.value = data.map((user) => ({
+      username: user.username,
+      room_number: user.room_number,
+      role: user.role,
+    }));
+  } catch (error: any) {
+    errorMessage.value = error?.message || '用户列表加载失败，请检查后端服务。';
+  } finally {
+    loading.value = false;
+  }
+}
+
+function isAdminRole(role?: string | null) {
+  return String(role || '').toLowerCase() === 'admin';
+}
+
+function tagText(user: UserRecord) {
+  if (isAdminRole(user.role)) return 'Admin';
+  if (!String(user.room_number || '').trim()) return 'Flagged';
+  return `Room ${user.room_number}`;
+}
+
+function tagClass(user: UserRecord) {
+  return {
+    'admin-list__tag--admin': isAdminRole(user.role),
+    'admin-list__tag--flagged': !isAdminRole(user.role) && !String(user.room_number || '').trim(),
+  };
+}
 </script>
 
 <style scoped>
-.admin-page { position: relative; width: 100%; min-height: 100vh; background: #FFFFFF; overflow: hidden; }
-.bg-image { position: absolute; width: 2632rpx; height: 3250rpx; left: -984rpx; top: -652rpx; opacity: 0.3; }
-.top-nav-bar { position: relative; z-index: 20; display: flex; justify-content: space-between; align-items: center; height: 110rpx; background: #D8E5E6; padding: 0 20rpx; margin-top: 100rpx; }
-.nav-tab { width: 212rpx; height: 84rpx; background: #FFFFFF; box-shadow: 0 8rpx 8rpx rgba(0, 0, 0, 0.25); border-radius: 34rpx; display: flex; align-items: center; justify-content: center; }
-.nav-tab.active { background: #95BEDA; }
-.nav-tab-text { font-weight: 400; font-size: 36rpx; text-align: center; color: #000000; }
-.search-wrapper { position: relative; z-index: 10; padding: 20rpx 48rpx; }
-.search-box { display: flex; align-items: center; width: 100%; height: 64rpx; background: rgba(239, 239, 239, 0.65); border: 2rpx solid #534242; box-shadow: 0 8rpx 8rpx rgba(0, 0, 0, 0.25); padding: 0 20rpx; }
-.search-icon { font-size: 40rpx; opacity: 0.5; }
-.search-input { flex: 1; height: 100%; font-size: 32rpx; color: #000000; margin-left: 10rpx; }
-.search-placeholder { font-size: 32rpx; color: #000000; opacity: 0.35; }
-.stats-section { position: relative; z-index: 10; display: flex; justify-content: space-between; padding: 0 72rpx; margin-bottom: 30rpx; }
-.stat-card { width: 280rpx; height: 196rpx; background: #FFFFFF; border: 6rpx solid #000000; box-shadow: 0 8rpx 8rpx rgba(0, 0, 0, 0.25); border-radius: 34rpx; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20rpx; }
-.stat-title { font-size: 32rpx; text-align: center; color: #000000; }
-.stat-value { font-size: 48rpx; text-align: center; margin-top: 10rpx; }
-.stat-value.red { color: #B80F0F; }
-.applicants-section { position: relative; z-index: 10; margin: 0 26rpx; background: #FFFFFF; border: 4rpx solid #000000; box-shadow: 0 8rpx 8rpx rgba(0, 0, 0, 0.25); border-radius: 20rpx; overflow: hidden; }
-.table-header { display: flex; align-items: center; height: 90rpx; padding: 0 20rpx; }
-.header-cell { font-size: 32rpx; text-align: center; color: #000000; }
-.header-cell.applicant { flex: 2; }
-.header-cell.consumption { flex: 2; }
-.header-cell.operation { flex: 1; }
-.divider { height: 2rpx; background: #000000; margin: 0 20rpx; }
-.divider.thick { height: 4rpx; }
-.applicants-list { height: 600rpx; padding: 0 20rpx; }
-.applicant-row { display: flex; align-items: center; height: 120rpx; border-bottom: 2rpx solid #000000; }
-.applicant-cell { flex: 2; display: flex; align-items: center; }
-.avatar-placeholder { width: 60rpx; height: 60rpx; background: #D9D9D9; border: 4rpx solid #888888; display: flex; align-items: center; justify-content: center; margin-right: 16rpx; }
-.avatar-text { font-size: 30rpx; }
-.applicant-name { font-size: 36rpx; color: #787878; }
-.consumption-cell { flex: 2; font-size: 36rpx; text-align: center; color: #676161; }
-.operation-cell { flex: 1; font-size: 40rpx; text-align: center; color: #5F5252; }
-.help-center { position: fixed; left: 42rpx; bottom: 80rpx; display: flex; align-items: center; z-index: 20; }
-.help-icon { font-size: 50rpx; opacity: 0.5; }
-.help-text { margin-left: 10rpx; font-size: 30rpx; color: #AEB4B5; text-shadow: 0 8rpx 8rpx rgba(0, 0, 0, 0.25); }
-.safe-area-bottom { height: 200rpx; }
+.admin-page__header {
+  padding: 16rpx 6rpx 24rpx;
+}
+
+.admin-page__headline {
+  margin-top: 10rpx;
+}
+
+.admin-page__subline {
+  margin-top: 14rpx;
+}
+
+.admin-page__loading,
+.admin-search,
+.admin-list,
+.admin-note {
+  position: relative;
+  margin-top: 18rpx;
+  padding: 24rpx;
+  border-radius: var(--st-radius-xl);
+  background: rgba(255, 255, 255, 0.94);
+  border: 1rpx solid var(--st-line);
+  box-shadow: var(--st-shadow-tight);
+  overflow: hidden;
+}
+
+.admin-page__loading {
+  font-size: 26rpx;
+  color: var(--st-text-soft);
+}
+
+.admin-page__stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14rpx;
+}
+
+.admin-search__topline,
+.admin-list__topline,
+.admin-note__topline {
+  position: absolute;
+  left: 18rpx;
+  right: 18rpx;
+  top: 12rpx;
+  height: 1rpx;
+  border-radius: 999rpx;
+  background: rgba(255, 255, 255, 0.84);
+}
+
+.admin-search__field {
+  width: 100%;
+  min-height: 92rpx;
+  padding: 0 58rpx 0 24rpx;
+  border-radius: 22rpx;
+  border: 1rpx solid var(--st-line);
+  background: rgba(247, 251, 255, 0.96);
+  color: var(--st-text);
+  font-size: 28rpx;
+}
+
+.admin-search__placeholder {
+  color: var(--st-text-muted);
+}
+
+.admin-search__dot {
+  position: absolute;
+  right: 40rpx;
+  top: 50%;
+  width: 18rpx;
+  height: 18rpx;
+  border-radius: 50%;
+  background: rgba(47, 140, 255, 0.2);
+  box-shadow: 0 0 14rpx rgba(47, 140, 255, 0.2);
+  transform: translateY(-50%);
+}
+
+.admin-list__title,
+.admin-note__title {
+  display: block;
+  font-size: 30rpx;
+  font-weight: 700;
+  color: var(--st-text);
+}
+
+.admin-list__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18rpx;
+  padding: 20rpx 0;
+  border-bottom: 1rpx solid rgba(215, 232, 245, 0.72);
+}
+
+.admin-list__row:first-of-type {
+  margin-top: 14rpx;
+}
+
+.admin-list__row:last-child {
+  border-bottom: 0;
+}
+
+.admin-list__identity {
+  display: flex;
+  align-items: center;
+  gap: 14rpx;
+  min-width: 0;
+}
+
+.admin-list__avatar {
+  width: 56rpx;
+  height: 56rpx;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(180deg, rgba(215, 238, 255, 1) 0%, rgba(196, 228, 255, 1) 100%);
+  color: var(--st-accent-deep);
+  font-size: 24rpx;
+  font-weight: 700;
+}
+
+.admin-list__copy {
+  min-width: 0;
+}
+
+.admin-list__name {
+  display: block;
+  font-size: 28rpx;
+  font-weight: 600;
+  color: var(--st-text);
+}
+
+.admin-list__meta,
+.admin-note__copy {
+  display: block;
+  margin-top: 6rpx;
+  font-size: 22rpx;
+  line-height: 1.5;
+  color: var(--st-text-soft);
+}
+
+.admin-list__tag {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 52rpx;
+  padding: 0 18rpx;
+  border-radius: 999rpx;
+  background: #e9fbf5;
+  color: var(--st-success);
+  font-size: 22rpx;
+  font-weight: 600;
+}
+
+.admin-list__tag--admin {
+  background: #eef6ff;
+  color: var(--st-accent-deep);
+}
+
+.admin-list__tag--flagged {
+  background: #fff5e9;
+  color: var(--st-warning);
+}
+
+.admin-note__copy {
+  margin-top: 10rpx;
+}
 </style>
