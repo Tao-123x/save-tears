@@ -5,7 +5,26 @@ Save Tears 项目启动手册
 
 - Python 3.8+ (用于后端)
 - Node.js 14+ (用于前端和小程序)
+- Docker Desktop / Docker Engine + Docker Compose (用于容器化启动，可选)
 - 微信开发者工具 (用于预览小程序)
+
+---
+
+0. 一条命令启动前后端（Docker，可选）
+
+如果你只是想在干净环境里把项目跑起来，推荐直接使用 Docker。
+
+```bash
+docker compose up --build
+```
+
+启动后可访问：
+- H5 前端：`http://localhost:5173`
+- 后端接口：`http://localhost:8000`
+
+说明：
+- 容器版后端使用独立的 Docker volume 保存 SQLite 数据。
+- 第一次启动时数据库通常是空的，如果没有现成账号，请先注册再登录。
 
 ---
 
@@ -107,7 +126,7 @@ export SAVE_TEARS_DB_URL="mysql+pymysql://root:你的密码@127.0.0.1:3306/save_
 
 **Q: 端口被占用 `Address already in use`**
 A: 之前的服务没关掉。
-- 查找占用端口的进程：`lsof -i :8000` (后端) 或 `lsof -i :8080` (前端)。
+- 查找占用端口的进程：`lsof -i :8000` (后端) 或 `lsof -i :5173` (前端)。
 - 杀掉进程：`kill -9 <PID>`。
 
 **Q: 小程序图表不显示**
@@ -124,7 +143,26 @@ This guide will walk you through how to start the **Backend**, **Web Frontend**,
 
 - **Python 3.8+** (for the backend)
 - **Node.js 14+** (for frontend and mini program)
+- **Docker Desktop / Docker Engine + Docker Compose** (optional, for containerized startup)
 - **WeChat Developer Tools** (for previewing the mini program)
+
+---
+
+## 0. Start the H5 frontend and backend with Docker (Optional)
+
+If you want a clean collaborator-friendly environment, run the project from the repository root:
+
+```bash
+docker compose up --build
+```
+
+After startup:
+- H5 frontend: `http://localhost:5173`
+- Backend API: `http://localhost:8000`
+
+Notes:
+- The containerized backend stores SQLite data in a Docker volume.
+- A fresh environment usually has no users yet, so register an account before trying to log in.
 
 ---
 
@@ -163,12 +201,12 @@ If you want to use MySQL instead, set `SAVE_TEARS_DB_URL` before starting the se
 
 ##  2. Start the Web Frontend
 
-This is the management dashboard or user interface for the browser.
+The runnable browser frontend in this repository is the H5 mode of `save_tears_miniprogram`.
 
 ### Steps
 1. **Enter the Frontend Directory**
    ```bash
-   cd save_tears_frontend
+   cd save_tears_miniprogram
    ```
 
 2. **Install Dependencies (First time only)**
@@ -178,10 +216,13 @@ This is the management dashboard or user interface for the browser.
 
 3. **Start the Development Server**
    ```bash
-   npm run serve
+   npm run dev:h5
    ```
 
-**Success Indicator**: The terminal shows the access URL, usually `http://localhost:8080`.
+**Success Indicator**: The terminal shows the access URL, usually `http://localhost:5173`.
+
+For H5 local development, the frontend defaults to `http://<current-browser-host>:8000`.
+If you need another backend address, set `VITE_API_BASE_URL` before startup.
 
 ---
 
@@ -225,7 +266,7 @@ export SAVE_TEARS_DB_URL="mysql+pymysql://root:YOUR_PASSWORD@127.0.0.1:3306/save
 
 **Q: Port already in use `Address already in use`**
 A: A previous service was not shut down properly.
-- Find the process occupying the port: `lsof -i :8000` (for backend) or `lsof -i :8080` (for frontend).
+- Find the process occupying the port: `lsof -i :8000` (for backend) or `lsof -i :5173` (for frontend).
 - Kill the process: `kill -9 <PID>`.
 
 **Q: Mini program charts are not displaying**

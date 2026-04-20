@@ -60,6 +60,13 @@ save_tears/
 
 *(For more detailed startup steps and environment variable configurations, please refer to the `STARTUP_GUIDE.md`)*
 
+### Running Everything with Docker
+1. From the repository root, run `docker compose up --build`
+2. Open the H5 frontend at `http://localhost:5173`
+3. The backend API will be available at `http://localhost:8000`
+
+The Docker setup uses a named volume for the backend SQLite database, so a fresh collaborator environment starts with an empty database. Register a new account first if no users exist yet.
+
 ### Running the Backend
 1. Navigate to the directory: `cd save_tears_backend`
 2. Create a virtual environment: `python3 -m venv .venv && source .venv/bin/activate`
@@ -88,6 +95,8 @@ If you need to point the mini program or another device to a different backend h
 The project is currently deployed to a production environment for testing. In local development, the H5 frontend talks to the backend on port `8000` using the current browser host.
 
 For automated system deployment, you can execute the `deploy.sh` script in the root directory. It includes Nginx installation, Systemd daemon registration, and Python environment setup.
+
+For local cross-machine validation, prefer the Docker setup above so collaborators can run the same frontend/backend stack without relying on host-specific Node or Python environments.
 
 ---
 

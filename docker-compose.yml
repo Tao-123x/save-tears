@@ -1,0 +1,23 @@
+services:
+  backend:
+    build:
+      context: ./save_tears_backend
+      dockerfile: Dockerfile
+    environment:
+      SAVE_TEARS_DB_URL: sqlite:////app/data/save_tears.db
+    ports:
+      - "8000:8000"
+    volumes:
+      - save-tears-backend-data:/app/data
+
+  frontend:
+    build:
+      context: ./save_tears_miniprogram
+      dockerfile: Dockerfile
+    depends_on:
+      - backend
+    ports:
+      - "5173:80"
+
+volumes:
+  save-tears-backend-data:
