@@ -7,6 +7,7 @@ import {
   normalizeUserRole,
   parseStoredUser,
 } from '../src/utils/session.ts';
+import { resolveApiBaseUrl } from '../src/utils/api-base.ts';
 import {
   buildAdminOverview,
   buildHomeDigest,
@@ -149,4 +150,31 @@ test('buildTrendGeometry falls back to a steady baseline when values are empty o
     [80, 80, 80],
   );
   assert.ok(geometry.segments.every((segment) => Math.abs(segment.angle) < 0.001));
+});
+
+test('resolveApiBaseUrl prefers explicit config and otherwise uses the current H5 host', () => {
+  assert.equal(
+    resolveApiBaseUrl({
+      customBaseUrl: 'http://10.0.0.8:9000/',
+      browserProtocol: 'http:',
+      browserHostname: 'localhost',
+    }),
+    'http://10.0.0.8:9000',
+  );
+
+  assert.equal(
+    resolveApiBaseUrl({
+      browserProtocol: 'http:',
+      browserHostname: 'localhost',
+    }),
+    'http://localhost:8000',
+  );
+
+  assert.equal(
+    resolveApiBaseUrl({
+      browserProtocol: 'http:',
+      browserHostname: '192.168.31.5',
+    }),
+    'http://192.168.31.5:8000',
+  );
 });

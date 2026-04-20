@@ -1,7 +1,5 @@
 import { getStoredUser } from '@/utils/session';
-
-// 默认指向当前电脑在热点网段中的地址，手机端不能用 127.0.0.1
-const DEFAULT_BASE_URL = 'http://172.20.10.11:8000';
+import { resolveApiBaseUrl } from '@/utils/api-base';
 
 export interface LoginResponse {
     msg: string;
@@ -20,16 +18,15 @@ export interface UserRecord {
 
 function getBaseUrl() {
     const customBaseUrl = uni.getStorageSync('api_base_url');
-    if (!customBaseUrl) {
-        return DEFAULT_BASE_URL;
-    }
+    const browserLocation = typeof window !== 'undefined' ? window.location : undefined;
+    const envBaseUrl = typeof import.meta !== 'undefined' ? import.meta.env?.VITE_API_BASE_URL : '';
 
-    // 手机端如果还缓存了 localhost/127.0.0.1，会继续请求自己，直接回退到电脑地址
-    if (/^(https?:\/\/)?(localhost|127\.0\.0\.1)(:\d+)?(\/.*)?$/i.test(customBaseUrl)) {
-        return DEFAULT_BASE_URL;
-    }
-
-    return customBaseUrl;
+    return resolveApiBaseUrl({
+        customBaseUrl,
+        envBaseUrl,
+        browserProtocol: browserLocation?.protocol,
+        browserHostname: browserLocation?.hostname,
+    });
 }
 
 // 辅助函数：处理 API 请求 (适配微信小程序 uni.request)

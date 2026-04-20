@@ -69,9 +69,12 @@ save_tears/
 The backend now defaults to a local SQLite database file for local development. If you want to use MySQL instead, set `SAVE_TEARS_DB_URL` before starting the server.
 
 ### Running the Web Frontend
-1. Navigate to the directory: `cd save_tears_frontend`
+1. Navigate to the directory: `cd save_tears_miniprogram`
 2. Install dependencies: `npm install`
-3. Run the project: `npm run serve` (or `npm run dev`)
+3. Run the project: `npm run dev:h5`
+
+For H5 local development, the frontend now defaults to `http://<current-host>:8000`.
+If you need to point the mini program or another device to a different backend host, set `VITE_API_BASE_URL` before startup or configure `api_base_url` in local storage.
 
 ### Running the Mini Program
 1. Navigate to the directory: `cd save_tears_miniprogram`
@@ -82,9 +85,7 @@ The backend now defaults to a local SQLite database file for local development. 
 ---
 
 ## 🌐 Production Environment
-The project is currently deployed to a production environment for testing. The core architecture uses **Nginx** as the primary API gateway:
-- Web dashboard paths are hosted as static resources (root directory `/`).
-- Backend API requests are proxy-forwarded via the `/api` path to the local port `8000`.
+The project is currently deployed to a production environment for testing. In local development, the H5 frontend talks to the backend on port `8000` using the current browser host.
 
 For automated system deployment, you can execute the `deploy.sh` script in the root directory. It includes Nginx installation, Systemd daemon registration, and Python environment setup.
 

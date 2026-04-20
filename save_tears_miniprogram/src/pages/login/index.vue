@@ -3,7 +3,7 @@
     <view class="auth-page">
       <view class="auth-page__brand st-panel-raise">
         <text class="st-kicker">SAVE TEARS</text>
-        <text class="st-display auth-page__headline">Quiet water management</text>
+        <text class="st-display auth-page__headline">Save Tears</text>
       </view>
 
       <view class="auth-card st-panel-raise">

@@ -3,7 +3,7 @@
     <view class="admin-page">
       <view class="admin-page__header st-panel-raise">
         <text class="st-kicker">Admin</text>
-        <text class="st-display admin-page__headline">Compact control</text>
+        <text class="st-display admin-page__headline">Admin</text>
       </view>
 
       <view v-if="loading" class="admin-page__loading st-panel-raise">正在整理住户列表...</view>

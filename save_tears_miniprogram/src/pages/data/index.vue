@@ -3,7 +3,7 @@
     <view class="data-page">
       <view class="data-page__header st-panel-raise">
         <text class="st-kicker">Data centre</text>
-        <text class="st-display data-page__headline">Clean signals</text>
+        <text class="st-display data-page__headline">Data</text>
         <text class="st-subtitle data-page__subline">
           {{ currentUser ? `${currentUser.room_number || 'Room'}` : 'Sign in' }}
         </text>

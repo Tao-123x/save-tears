@@ -3,7 +3,7 @@
     <view class="home-page">
       <view class="home-page__header st-panel-raise">
         <text class="st-kicker">Overview</text>
-        <text class="st-display home-page__headline">Good morning</text>
+        <text class="st-display home-page__headline">Home</text>
         <text class="st-subtitle home-page__subline">
           {{ currentUser ? `${currentUser.room_number || 'Room'}` : 'Sign in' }}
         </text>

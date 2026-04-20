@@ -41,14 +41,14 @@ Save Tears 项目启动手册
 
 ---
 
-##  2. 启动 Web 前端 (Frontend)
+##  2. 启动 H5 前端 (Frontend)
 
-这是用于浏览器的管理后台或用户界面。
+当前仓库里的可运行浏览器前端是 `save_tears_miniprogram` 的 H5 模式。
 
 ### 步骤
 1. **进入前端目录**
    ```bash
-   cd save_tears_frontend
+   cd save_tears_miniprogram
    ```
 
 2. **安装依赖 (仅首次需要)**
@@ -58,10 +58,12 @@ Save Tears 项目启动手册
 
 3. **启动开发服务器**
    ```bash
-   npm run serve
+   npm run dev:h5
    ```
 
-**成功标志**: 终端显示访问地址，通常是 `http://localhost:8080`。
+**成功标志**: 终端显示访问地址，通常是 `http://localhost:5173`。
+
+H5 本地开发默认请求 `http://<当前浏览器主机>:8000`。如果需要连接到别的后端地址，请在启动前设置 `VITE_API_BASE_URL`。
 
 ---
 

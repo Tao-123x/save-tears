@@ -3,7 +3,7 @@
     <view class="profile-page">
       <view class="profile-page__header st-panel-raise">
         <text class="st-kicker">Account</text>
-        <text class="st-display profile-page__headline">Resident profile</text>
+        <text class="st-display profile-page__headline">Profile</text>
       </view>
 
       <view class="profile-hero st-panel-raise">
@@ -24,7 +24,6 @@
         <view class="profile-setting__row">
           <view class="profile-setting__copy">
             <text class="profile-setting__title">Billing alerts</text>
-            <text class="profile-setting__desc">Monthly and due-date reminders</text>
           </view>
           <switch :checked="dailyDigestEnabled" color="#2f8cff" @change="handleToggle('dailyDigestEnabled', $event)" />
         </view>
@@ -35,7 +34,6 @@
         <view class="profile-setting__row">
           <view class="profile-setting__copy">
             <text class="profile-setting__title">Quality alerts</text>
-            <text class="profile-setting__desc">Only show unusual readings</text>
           </view>
           <switch :checked="anomalyAlertsEnabled" color="#2f8cff" @change="handleToggle('anomalyAlertsEnabled', $event)" />
         </view>
