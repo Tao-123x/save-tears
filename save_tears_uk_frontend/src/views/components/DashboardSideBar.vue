@@ -1,12 +1,11 @@
 <template>
   <div class="sidebar">
-    <h2>Save Tears</h2>
     <ul>
-      <li></li>
-      <li></li>
-      <li></li>
-      <li></li>
-      <li></li>
+      <li>Overview</li>
+      <li>Water Usage</li>
+      <li>Cost Estimator</li>
+      <li>Tips</li>
+      <li><button class="btn bg-dark text-white">Logout</button></li>
     </ul>
   </div>
 </template>

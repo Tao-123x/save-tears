@@ -7,9 +7,6 @@
         <li><router-link v-if="!isLoggedIn" to="/login">Login</router-link></li>
         <li><router-link v-if="!isLoggedIn" to="/register">Register</router-link></li>
         <li><router-link v-if="isLoggedIn"to="/dashboard">Dashboard</router-link></li>
-        <li v-if="isLoggedIn">
-            <button @click="logout">Logout</button>
-        </li>
       </ul>
     </nav>
   </header>
