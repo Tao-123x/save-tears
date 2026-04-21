@@ -1,6 +1,6 @@
 <template>
-  <div>
-    <div class="box">
+  <div class="auth-page">
+    <div class="box auth-box">
       <h1>Login</h1>
       <form @submit.prevent="handleLogin">
         <div class="input-row">

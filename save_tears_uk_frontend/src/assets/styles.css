@@ -1,5 +1,22 @@
-body {
+html,
+body,
+#app {
+  height: 100%;
   margin: 0;
+}
+
+.page-wrapper {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.page-content {
+  flex: 1;
+  display: flex;
+}
+.navbar-toggler-icon {
+  filter: brightness(0) invert(1);
 }
 
 nav {
@@ -37,10 +54,7 @@ footer {
   color: #2B9939;
   text-align: center;
   padding: 20px;
-  position: fixed;
-  bottom: 0;
   width: 100%;
-
 }
 
 /* Home Page Styles */
@@ -50,7 +64,9 @@ footer {
   padding: 20px;
   margin: 20px auto;
   max-width: 600px;
+  width: 100%;
   text-align: center;
+  box-sizing: border-box;
 }
 
 button {
@@ -60,8 +76,17 @@ button {
   padding: 10px 20px;
   font-size: 16px;
   cursor: pointer;
-  margin-left: 10px;
+
 }
+
+.button-group {
+  display: flex;
+  gap: 15px;
+  justify-content: center;
+  margin-top: 15px;
+  flex-wrap: wrap;
+}
+
 button a {
   color: white;
   text-decoration: none;
@@ -91,27 +116,127 @@ button a {
   width: 100%;
   padding: 8px;
   box-sizing: border-box;
+  border: none;
+}
+
+.auth-page {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 30px 15px;
+  box-sizing: border-box;
+}
+
+.auth-box {
+  width: 100%;
+  max-width: 700px;
+}
+/* Dashboard sidebar styles */
+.sidebar {
+  width: 230px;
+  min-width: 230px;
+  background-color: #BBCFDA;
+  padding: 20px;
+}
+
+.sidebar h4 {
+  margin-bottom: 20px;
+}
+
+.sidebar ul {
+  list-style: none;
+  padding: 0;
+}
+
+.sidebar li {
+  margin-bottom: 15px;
+}
+
+.sidebar a {
+  display: block;
+  text-decoration: none;
+  color: black;
+  padding: 8px 0;
+}
+.sidebar a:hover {
+  color: #4E8FCC;
+}
+
+.sidebar a.router-link-active {
+  font-weight: bold;
+  color: #2B9939;
 }
 
 /* Dashboard Styles */
+.dashboard {
+  display: flex;
+  flex: 1;
+  align-items: stretch;
+}
+
+.main-content {
+  flex: 1;
+  padding: 20px;
+}
 .row {
-  margin-left: 20px;
-  margin-right: 20px;
+  margin-bottom: 25px;
+  align-items: stretch;
 }
 .dashboard-card {
   background: white;
   padding: 20px;
-  margin-top: 0;
-  min-height: 180px;
+  min-height: 220px;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  justify-content: flex-start;
+  height: 100%;
 }
 
-.row {
-  margin-bottom: 25px;
+.card-title {
+  padding-bottom: 20px;
 }
 
+/* Responsive Design */
+@media (max-width: 768px) {
+  .box {
+    width: 95%;
+    padding: 15px;
+  }
 
+  .box h1 {
+    font-size: 1.4rem;
+  }
 
+  .box p {
+    font-size: 0.9rem;
+  }
+
+  button {
+    font-size: 14px;
+    padding: 10px 14px;
+  }
+
+  .home-image {
+    max-width: 180px;
+  }
+  .dashboard {
+    flex-direction: column;
+  }
+
+  .main-content {
+    padding: 15px;
+  }
+
+  .dashboard-card {
+    min-height: auto;
+  }
+}
+
+@media (max-width: 1100px) {
+  .sidebar {
+    display: none;
+  }
+
+}

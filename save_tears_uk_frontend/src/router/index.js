@@ -3,6 +3,10 @@ import Home from '../views/pages/Home.vue'
 import Login from '../views/pages/Login.vue'
 import Register from '../views/pages/Register.vue'
 import Dashboard from '../views/pages/Dashboard.vue'
+import Account from '../views/pages/Account.vue'
+import WaterUsage from "../views/pages/WaterUsage.vue";
+import CostEstimator from "../views/pages/CostEstimator.vue";
+import Tips from "../views/pages/Tips.vue";
 
 // checks if user is authenticated and logged in, if not redirects to login page
 const ifAuthenticated = (to, from, next) => {
@@ -28,7 +32,12 @@ const routes = [
   { path: '/', component: Home},
   { path: '/login', component: Login, beforeEnter: ifNotAuthenticated },
   { path: '/register', component: Register, beforeEnter: ifNotAuthenticated },
-  { path: '/dashboard', component: Dashboard, beforeEnter: ifAuthenticated }
+  { path: '/dashboard', component: Dashboard, beforeEnter: ifAuthenticated },
+  { path: '/account', component: Account, beforeEnter: ifAuthenticated },
+  { path: '/water-usage', component: WaterUsage, beforeEnter: ifAuthenticated },
+  { path: '/cost-estimator', component: CostEstimator, beforeEnter: ifAuthenticated },
+  { path: '/tips', component: Tips, beforeEnter: ifAuthenticated }
+
 ]
 
 const router = createRouter({

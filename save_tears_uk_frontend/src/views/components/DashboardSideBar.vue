@@ -1,38 +1,22 @@
 <template>
   <div class="sidebar">
+    <h4>Save Tears UK</h4>
     <ul>
-      <li>Overview</li>
-      <li>Water Usage</li>
-      <li>Cost Estimator</li>
-      <li>Tips</li>
-      <li><button class="btn bg-dark text-white">Logout</button></li>
+      <li>
+        <router-link to="/dashboard">Overview</router-link>
+      </li>
+      <li>
+        <router-link to="/water-usage">Water Usage</router-link>
+      </li>
+      <li>
+        <router-link to="/cost-estimator">Cost Estimator</router-link>
+      </li>
+      <li>
+        <router-link to="/tips">Tips</router-link>
+      </li>
+      <li>
+        <router-link to="/account">Account</router-link >
+      </li>
     </ul>
   </div>
 </template>
-
-<style>
-.sidebar {
-  width: 200px;
-  height: 100vh;
-  background-color: #BBCFDA;
-  padding: 20px;
-}
-
-.sidebar h2 {
-  margin-bottom: 20px;
-}
-
-.sidebar ul {
-  list-style: none;
-  padding: 0;
-}
-
-.sidebar li {
-  margin-bottom: 15px;
-  cursor: pointer;
-}
-
-.sidebar li:hover {
-  color: #4E8FCC;
-}
-</style>
