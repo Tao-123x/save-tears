@@ -2,8 +2,10 @@ FROM node:20-bookworm-slim AS build
 
 WORKDIR /app
 
+ARG NPM_CONFIG_REGISTRY=https://registry.npmmirror.com
+
 COPY package.json package-lock.json ./
-RUN npm ci
+RUN npm ci --registry=$NPM_CONFIG_REGISTRY
 
 COPY . .
 ARG VITE_API_BASE_URL=""
