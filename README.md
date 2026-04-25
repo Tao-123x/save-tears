@@ -79,8 +79,20 @@ docker compose --env-file .env.production -f docker-compose.prod.yml up -d --bui
 The production stack serves:
 - H5 frontend at `https://<DOMAIN>/`
 - Backend API through `https://<DOMAIN>/api/`
+- Health check at `https://<DOMAIN>/api/health`
 
 Open ports `80` and `443` in the server firewall before starting the stack. Keep backend port `8000` private.
+
+Production admin bootstrap is controlled by environment variables in `.env.production`:
+
+```bash
+SAVE_TEARS_ADMIN_USERNAME=admin
+SAVE_TEARS_ADMIN_PASSWORD=replace-with-a-strong-admin-password
+SAVE_TEARS_ADMIN_ROOM=HQ
+SAVE_TEARS_ADMIN_RESET_PASSWORD=0
+```
+
+The admin account is created on startup when it does not already exist. Existing admin passwords are not overwritten unless `SAVE_TEARS_ADMIN_RESET_PASSWORD=1` is set for a restart.
 
 ### Running the Backend
 1. Navigate to the directory: `cd save_tears_backend`

@@ -60,11 +60,19 @@ DOMAIN=你的域名
 ACME_EMAIL=你的邮箱
 SAVE_TEARS_SECRET=一串足够长的随机密钥
 SAVE_TEARS_TOKEN_TTL=86400
+SAVE_TEARS_ADMIN_USERNAME=admin
+SAVE_TEARS_ADMIN_PASSWORD=一个强管理员密码
+SAVE_TEARS_ADMIN_ROOM=HQ
 ```
 
 成功后访问：
 - 前端：`https://你的域名/`
-- 后端健康检查：`https://你的域名/api/`
+- 后端健康检查：`https://你的域名/api/health`
+
+说明：
+- `SAVE_TEARS_ADMIN_USERNAME` 和 `SAVE_TEARS_ADMIN_PASSWORD` 只用于首次创建管理员账号。
+- 如果管理员已存在，默认不会覆盖密码；确实需要重置时，把 `SAVE_TEARS_ADMIN_RESET_PASSWORD=1` 后重启一次，再改回 `0`。
+- 后端会把新注册用户密码保存为哈希；旧的明文密码账号在成功登录后会自动升级为哈希。
 
 ---
 

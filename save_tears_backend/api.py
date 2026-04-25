@@ -4,6 +4,8 @@ import time
 import hmac
 import base64
 import hashlib
+import logging
+import secrets
 
 from fastapi import HTTPException, Depends, APIRouter, Header
 from pydantic import BaseModel
@@ -23,6 +25,9 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 AUTH_SECRET = os.getenv("SAVE_TEARS_SECRET", "save-tears-dev-secret")
 TOKEN_TTL_SECONDS = int(os.getenv("SAVE_TEARS_TOKEN_TTL", "86400"))
+PASSWORD_SCHEME = "pbkdf2_sha256"
+PASSWORD_ITERATIONS = int(os.getenv("SAVE_TEARS_PASSWORD_ITERATIONS", "260000"))
+logger = logging.getLogger("save_tears.backend")
 
 # ==================== 2. 数据库模型 ====================
 class UserDB(Base):
@@ -102,6 +107,97 @@ def get_db():
         yield db
     finally:
         db.close()
+
+
+def hash_password(password: str) -> str:
+    salt = secrets.token_urlsafe(16)
+    digest = hashlib.pbkdf2_hmac(
+        "sha256",
+        password.encode("utf-8"),
+        salt.encode("utf-8"),
+        PASSWORD_ITERATIONS,
+    )
+    return f"{PASSWORD_SCHEME}${PASSWORD_ITERATIONS}${salt}${_encode_segment(digest)}"
+
+
+def _is_hashed_password(stored_password: str | None) -> bool:
+    return bool(stored_password and stored_password.startswith(f"{PASSWORD_SCHEME}$"))
+
+
+def verify_password(password: str, stored_password: str | None) -> bool:
+    if not stored_password:
+        return False
+
+    if not _is_hashed_password(stored_password):
+        return hmac.compare_digest(stored_password, password)
+
+    try:
+        scheme, iterations, salt, expected_digest = stored_password.split("$", 3)
+        if scheme != PASSWORD_SCHEME:
+            return False
+        actual_digest = hashlib.pbkdf2_hmac(
+            "sha256",
+            password.encode("utf-8"),
+            salt.encode("utf-8"),
+            int(iterations),
+        )
+        return hmac.compare_digest(expected_digest, _encode_segment(actual_digest))
+    except (ValueError, TypeError):
+        return False
+
+
+def password_needs_upgrade(stored_password: str | None) -> bool:
+    return not _is_hashed_password(stored_password)
+
+
+def bootstrap_admin_user() -> None:
+    username = os.getenv("SAVE_TEARS_ADMIN_USERNAME", "").strip()
+    password = os.getenv("SAVE_TEARS_ADMIN_PASSWORD", "")
+    room_number = os.getenv("SAVE_TEARS_ADMIN_ROOM", "HQ").strip() or "HQ"
+    reset_password = os.getenv("SAVE_TEARS_ADMIN_RESET_PASSWORD", "").strip().lower() in {"1", "true", "yes"}
+
+    if not username or not password:
+        logger.info("admin_bootstrap_skipped reason=missing_admin_env")
+        return
+
+    db = SessionLocal()
+    try:
+        admin = db.query(UserDB).filter(UserDB.username == username).first()
+        if not admin:
+            db.add(
+                UserDB(
+                    username=username,
+                    password_hash=hash_password(password),
+                    room_number=room_number,
+                    role="admin",
+                )
+            )
+            db.commit()
+            logger.info("admin_bootstrap_created username=%s", username)
+            return
+
+        changed = False
+        if admin.role != "admin":
+            admin.role = "admin"
+            changed = True
+        if not str(admin.room_number or "").strip():
+            admin.room_number = room_number
+            changed = True
+        if reset_password:
+            admin.password_hash = hash_password(password)
+            changed = True
+        if changed:
+            db.commit()
+            logger.info("admin_bootstrap_updated username=%s reset_password=%s", username, reset_password)
+        else:
+            logger.info("admin_bootstrap_exists username=%s", username)
+    finally:
+        db.close()
+
+
+def initialize_database() -> None:
+    Base.metadata.create_all(bind=engine)
+    bootstrap_admin_user()
 
 
 def _encode_segment(value: bytes) -> str:
@@ -198,23 +294,20 @@ def register_user(user: UserRegister, db: Session = Depends(get_db)):
     if db_user:
         raise HTTPException(status_code=400, detail="用户名已存在")
     
-    # 2. 直接使用明文密码 (跳过加密步骤) 🚀
-    fake_hashed_password = user.password 
-    
-    # 3. 创建用户
+    # 2. 创建用户
     new_user = UserDB(
         username=user.username,
-        password_hash=fake_hashed_password,
+        password_hash=hash_password(user.password),
         room_number=user.room_number,
         role="user"
     )
     
-    # 4. 写入数据库
+    # 3. 写入数据库
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
     
-    return {"msg": "注册成功 (无加密模式)", "username": new_user.username}
+    return {"msg": "注册成功", "username": new_user.username}
 
 # 登录接口 (无加密版)
 @api_router.post("/login", response_model=LoginResponse)
@@ -224,9 +317,14 @@ def login_user(user: UserLogin, db: Session = Depends(get_db)):
     if not db_user:
         raise HTTPException(status_code=400, detail="用户名或密码错误")
 
-    # 2. 验证密码 (直接比较明文密码)
-    if db_user.password_hash != user.password:
+    # 2. 验证密码
+    if not verify_password(user.password, db_user.password_hash):
         raise HTTPException(status_code=400, detail="用户名或密码错误")
+
+    if password_needs_upgrade(db_user.password_hash):
+        db_user.password_hash = hash_password(user.password)
+        db.commit()
+        db.refresh(db_user)
     
     return {
         "msg": "登录成功",
