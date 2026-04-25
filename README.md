@@ -81,7 +81,7 @@ The production stack serves:
 - Backend API through `https://<DOMAIN>/api/`
 - Health check at `https://<DOMAIN>/api/health`
 
-Open ports `80` and `443` in the server firewall before starting the stack. Keep backend port `8000` private.
+Open ports `80` and `443` in the server firewall before starting the stack. Keep backend port `8000` private. When using a manually downloaded Tencent Cloud SSL certificate, place the certificate files at `certs/savetear.cloud_bundle.crt` and `certs/savetear.cloud.key`; the `certs/` directory is intentionally ignored by git.
 
 Production admin bootstrap is controlled by environment variables in `.env.production`:
 

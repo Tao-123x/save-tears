@@ -39,6 +39,9 @@ docker compose up --build
 - 域名 DNS 的 `A` 记录已指向服务器公网 IP
 - 腾讯云轻量服务器防火墙已放行 `80` 和 `443`
 - 服务器已安装 Docker 和 Docker Compose
+- 如果使用腾讯云手动 SSL 证书，把 Nginx 证书包中的 `.crt` 和 `.key` 放到仓库根目录的 `certs/`，文件名保持：
+  - `certs/savetear.cloud_bundle.crt`
+  - `certs/savetear.cloud.key`
 
 部署步骤：
 
@@ -70,6 +73,7 @@ SAVE_TEARS_ADMIN_ROOM=HQ
 - 后端健康检查：`https://你的域名/api/health`
 
 说明：
+- 当前生产 Caddy 配置会保留 `:80` 入口用于 IP 访问，同时为 `DOMAIN` 配置手动 TLS 证书。
 - `SAVE_TEARS_ADMIN_USERNAME` 和 `SAVE_TEARS_ADMIN_PASSWORD` 只用于首次创建管理员账号。
 - 如果管理员已存在，默认不会覆盖密码；确实需要重置时，把 `SAVE_TEARS_ADMIN_RESET_PASSWORD=1` 后重启一次，再改回 `0`。
 - 后端会把新注册用户密码保存为哈希；旧的明文密码账号在成功登录后会自动升级为哈希。

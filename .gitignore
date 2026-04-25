@@ -8,6 +8,7 @@ __pycache__/
 node_modules/
 .env
 .env.production
+certs/
 .DS_Store
 
 # Uni-app / Wechat DevTools
