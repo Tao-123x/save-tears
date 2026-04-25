@@ -42,7 +42,7 @@ function callApi(endpoint: string, method: 'GET' | 'POST' | 'PUT' | 'DELETE' = '
                 if (response.statusCode >= 200 && response.statusCode < 300) {
                     resolve(response.data);
                 } else {
-                    const error = new Error((response.data as any)?.detail || 'API 请求失败');
+                    const error = new Error((response.data as any)?.detail || '请求失败，请稍后再试');
                     (error as any).statusCode = response.statusCode;
                     reject(error);
                 }

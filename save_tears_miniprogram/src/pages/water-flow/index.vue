@@ -1,8 +1,8 @@
 <template>
   <EditorialPage tone="mist">
     <view class="redirect-page">
-      <text class="st-kicker">Flow Redirect</text>
-      <text class="st-title">正在把你带到新的数据中心 · 用水流量分段。</text>
+      <text class="st-kicker">数据中心</text>
+      <text class="st-title">正在前往用水记录。</text>
     </view>
   </EditorialPage>
 </template>

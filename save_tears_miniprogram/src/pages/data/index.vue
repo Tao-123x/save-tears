@@ -2,17 +2,17 @@
   <EditorialPage tone="mist">
     <view class="data-page">
       <view class="data-page__header st-panel-raise">
-        <text class="st-kicker">Data centre</text>
-        <text class="st-display data-page__headline">Data</text>
+        <text class="st-kicker">数据中心</text>
+        <text class="st-display data-page__headline">数据</text>
         <text class="st-subtitle data-page__subline">
-          {{ currentUser ? `${currentUser.room_number || 'Room'}` : 'Sign in' }}
+          {{ currentUser ? `${currentUser.room_number || '房间'}` : '请登录' }}
         </text>
       </view>
 
       <EditorialEmptyState
         v-if="!currentUser"
         title="请先登录再查看数据中心"
-        message="登录后查看数据"
+        message="登录后查看用水、账单和水质记录"
         action-text="去登录"
         @action="goToLogin"
       />
@@ -33,12 +33,12 @@
             </view>
           </view>
 
-          <view v-if="loading" class="data-card__loading">正在整理趋势图...</view>
+          <view v-if="loading" class="data-card__loading">正在加载数据...</view>
           <EditorialEmptyState
             v-else-if="errorMessage"
-            title="暂时无法读取这组数据"
+            title="暂时无法显示数据"
             :message="errorMessage"
-            action-text="重新加载"
+            action-text="再试一次"
             @action="loadDataCenter"
           />
           <MiniTrendChart v-else :points="currentPanel.points" :unit="currentPanel.unit" />
@@ -57,7 +57,7 @@
 
         <view class="data-list st-panel-raise">
           <view class="data-list__topline"></view>
-          <text class="data-list__title">Detail log</text>
+          <text class="data-list__title">明细</text>
 
           <EditorialEmptyState
             v-if="!currentPanel.rows.length && !loading && !errorMessage"
@@ -111,9 +111,9 @@ const billRecords = ref<WaterBillRecord[]>([]);
 const qualityRecords = ref<WaterQualityRecord[]>([]);
 
 const tabOptions = [
-  { label: '用水', value: 'flow', helper: 'Water' },
-  { label: '账单', value: 'bill', helper: 'Bills' },
-  { label: '水质', value: 'quality', helper: 'Quality' },
+  { label: '用水', value: 'flow' },
+  { label: '账单', value: 'bill' },
+  { label: '水质', value: 'quality' },
 ];
 
 onLoad((options) => {
@@ -139,21 +139,21 @@ const qualityInsights = computed(() => buildWaterQualityInsights(qualityRecords.
 const currentPanel = computed(() => {
   if (selectedTab.value === 'bill') {
     return {
-      kicker: 'Billing ledger',
-      heroValue: billInsights.value.latest ? `¥${billInsights.value.latest}` : 'Pending',
+      kicker: '账单',
+      heroValue: billInsights.value.latest ? `¥${billInsights.value.latest}` : '待更新',
       summary: billInsights.value.summary,
       points: billInsights.value.points,
       unit: '',
       metrics: [
-        { label: 'Latest', value: billInsights.value.latest ? `¥${billInsights.value.latest}` : 'Pending', tone: 'deep' as const },
-        { label: 'Total', value: `¥${billInsights.value.total}`, tone: 'mist' as const },
+        { label: '最近', value: billInsights.value.latest ? `¥${billInsights.value.latest}` : '待更新', tone: 'deep' as const },
+        { label: '合计', value: `¥${billInsights.value.total}`, tone: 'mist' as const },
         {
-          label: 'Change',
+          label: '变化',
           value: `${billInsights.value.deltaFromPrevious >= 0 ? '+' : ''}${billInsights.value.deltaFromPrevious}`,
           tone: billInsights.value.deltaFromPrevious > 0 ? 'warning' as const : 'mist' as const,
         },
       ],
-      columns: ['Month', 'Amount'],
+      columns: ['月份', '金额'],
       rows: [...billRecords.value]
         .sort((left, right) => right.month.localeCompare(left.month))
         .map((record) => ({
@@ -166,25 +166,25 @@ const currentPanel = computed(() => {
 
   if (selectedTab.value === 'quality') {
     return {
-      kicker: 'Water quality',
-      heroValue: qualityInsights.value.latest ? `${qualityInsights.value.latest} NTU` : 'Pending',
+      kicker: '水质',
+      heroValue: qualityInsights.value.latest ? `${qualityInsights.value.latest} NTU` : '待更新',
       summary: qualityInsights.value.summary,
       points: qualityInsights.value.points,
       unit: '',
       metrics: [
         {
-          label: 'Latest',
-          value: qualityInsights.value.latest ? `${qualityInsights.value.latest} NTU` : 'Pending',
+          label: '最近',
+          value: qualityInsights.value.latest ? `${qualityInsights.value.latest} NTU` : '待更新',
           tone: qualityInsights.value.statusTone === 'watch' ? 'warning' as const : 'deep' as const,
         },
-        { label: 'Average', value: `${qualityInsights.value.average} NTU`, tone: 'mist' as const },
+        { label: '平均', value: `${qualityInsights.value.average} NTU`, tone: 'mist' as const },
         {
-          label: 'Flags',
+          label: '提醒',
           value: `${qualityInsights.value.anomalyCount}`,
           tone: qualityInsights.value.anomalyCount ? 'warning' as const : 'mist' as const,
         },
       ],
-      columns: ['Timestamp', 'Quality'],
+      columns: ['时间', '浊度'],
       rows: [...qualityRecords.value]
         .sort((left, right) => right.timestamp.localeCompare(left.timestamp))
         .map((record) => ({
@@ -196,21 +196,21 @@ const currentPanel = computed(() => {
   }
 
   return {
-    kicker: 'Water usage',
+    kicker: '用水',
     heroValue: `${flowInsights.value.total} L`,
     summary: flowInsights.value.summary,
     points: flowInsights.value.points,
     unit: '',
     metrics: [
-      { label: 'Peak', value: `${flowInsights.value.peak} L`, tone: 'deep' as const },
-      { label: 'Average', value: `${flowInsights.value.average} L`, tone: 'mist' as const },
+      { label: '峰值', value: `${flowInsights.value.peak} L`, tone: 'deep' as const },
+      { label: '平均', value: `${flowInsights.value.average} L`, tone: 'mist' as const },
       {
-        label: 'Spikes',
+        label: '提醒',
         value: `${flowInsights.value.anomalyCount}`,
         tone: flowInsights.value.anomalyCount ? 'warning' as const : 'mist' as const,
       },
     ],
-    columns: ['Timestamp', 'Flow'],
+    columns: ['时间', '用量'],
     rows: [...flowRecords.value]
       .sort((left, right) => right.timestamp.localeCompare(left.timestamp))
       .map((record) => ({
@@ -222,9 +222,9 @@ const currentPanel = computed(() => {
 });
 
 const emptyMessage = computed(() => {
-  if (selectedTab.value === 'bill') return '后端还没有同步到账单记录。';
-  if (selectedTab.value === 'quality') return '后端还没有同步到浊度记录。';
-  return '后端还没有同步到用水记录。';
+  if (selectedTab.value === 'bill') return '还没有账单记录。';
+  if (selectedTab.value === 'quality') return '还没有水质记录。';
+  return '还没有用水记录。';
 });
 
 async function loadDataCenter() {
@@ -250,8 +250,8 @@ async function loadDataCenter() {
     flowRecords.value = flow;
     billRecords.value = bills;
     qualityRecords.value = quality;
-  } catch (error: any) {
-    errorMessage.value = error?.message || '数据中心暂时不可用，请稍后再试。';
+  } catch {
+    errorMessage.value = '暂时没有加载成功，请稍后再试。';
   } finally {
     loading.value = false;
   }

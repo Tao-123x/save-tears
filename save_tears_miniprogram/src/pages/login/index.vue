@@ -10,18 +10,18 @@
         <view class="auth-card__topline"></view>
 
         <view class="auth-card__field-group">
-          <text class="auth-card__label">Username</text>
+          <text class="auth-card__label">用户名</text>
           <input
             v-model="username"
             class="st-field auth-card__field"
             type="text"
-            placeholder="Room 302"
+            placeholder="请输入用户名"
             placeholder-class="st-field-placeholder"
           />
         </view>
 
         <view class="auth-card__field-group">
-          <text class="auth-card__label">Password</text>
+          <text class="auth-card__label">密码</text>
           <view class="auth-card__password">
             <input
               v-model="password"
@@ -31,7 +31,7 @@
               placeholder-class="st-field-placeholder"
             />
             <text class="auth-card__toggle" @tap="showPassword = !showPassword">
-              {{ showPassword ? 'Hide' : 'Show' }}
+              {{ showPassword ? '隐藏' : '显示' }}
             </text>
           </view>
         </view>
@@ -39,15 +39,15 @@
         <view class="auth-card__row" @tap="rememberMe = !rememberMe">
           <view class="auth-card__remember">
             <view class="auth-card__check" :class="{ 'auth-card__check--active': rememberMe }"></view>
-            <text class="auth-card__remember-text">Remember me</text>
+            <text class="auth-card__remember-text">记住用户名</text>
           </view>
         </view>
 
         <view class="auth-card__actions">
           <view class="st-button auth-card__action" @tap="handleLogin">
-            {{ loading ? 'Signing in...' : 'Sign in' }}
+            {{ loading ? '登录中...' : '登录' }}
           </view>
-          <view class="st-button st-button--soft auth-card__action" @tap="goToRegister">Create account</view>
+          <view class="st-button st-button--soft auth-card__action" @tap="goToRegister">创建账号</view>
         </view>
 
         <text v-if="message" class="auth-card__message" :class="{ 'auth-card__message--error': !isSuccess }">

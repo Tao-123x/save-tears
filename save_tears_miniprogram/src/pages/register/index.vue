@@ -2,38 +2,37 @@
   <EditorialPage tone="mist">
     <view class="auth-page">
       <view class="auth-page__brand st-panel-raise">
-        <text class="st-kicker">REGISTER</text>
-        <text class="st-display auth-page__headline">Create your resident access</text>
-        <text class="st-subtitle auth-page__subtitle">注册页只保留当前后端真实支持的字段，界面则保持同一套白蓝语言。</text>
+        <text class="st-kicker">注册</text>
+        <text class="st-display auth-page__headline">创建住户账号</text>
       </view>
 
       <view class="auth-card st-panel-raise">
         <view class="auth-card__topline"></view>
 
         <view class="auth-card__field-group">
-          <text class="auth-card__label">Username</text>
+          <text class="auth-card__label">用户名</text>
           <input
             v-model="username"
             class="st-field auth-card__field"
             type="text"
-            placeholder="New resident"
+            placeholder="请输入用户名"
             placeholder-class="st-field-placeholder"
           />
         </view>
 
         <view class="auth-card__field-group">
-          <text class="auth-card__label">Password</text>
+          <text class="auth-card__label">密码</text>
           <input
             v-model="password"
             class="st-field auth-card__field"
             password
-            placeholder="Create a password"
+            placeholder="设置登录密码"
             placeholder-class="st-field-placeholder"
           />
         </view>
 
         <view class="auth-card__field-group">
-          <text class="auth-card__label">Room</text>
+          <text class="auth-card__label">房间号</text>
           <input
             v-model="roomNumber"
             class="st-field auth-card__field"
@@ -45,9 +44,9 @@
 
         <view class="auth-card__actions">
           <view class="st-button auth-card__action" @tap="handleRegister">
-            {{ loading ? 'Creating...' : 'Create account' }}
+            {{ loading ? '创建中...' : '创建账号' }}
           </view>
-          <view class="st-button st-button--soft auth-card__action" @tap="goToLogin">Back to sign in</view>
+          <view class="st-button st-button--soft auth-card__action" @tap="goToLogin">返回登录</view>
         </view>
 
         <text v-if="message" class="auth-card__message" :class="{ 'auth-card__message--error': !isSuccess }">

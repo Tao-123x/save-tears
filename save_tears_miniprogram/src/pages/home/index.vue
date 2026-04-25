@@ -2,17 +2,17 @@
   <EditorialPage tone="mist">
     <view class="home-page">
       <view class="home-page__header st-panel-raise">
-        <text class="st-kicker">Overview</text>
-        <text class="st-display home-page__headline">Home</text>
+        <text class="st-kicker">首页</text>
+        <text class="st-display home-page__headline">用水概览</text>
         <text class="st-subtitle home-page__subline">
-          {{ currentUser ? `${currentUser.room_number || 'Room'}` : 'Sign in' }}
+          {{ currentUser ? `${currentUser.room_number || '房间'}` : '请登录' }}
         </text>
       </view>
 
       <EditorialEmptyState
         v-if="!currentUser"
         title="请先登录"
-        message="登录后查看首页"
+        message="登录后查看用水概览"
         action-text="去登录"
         @action="goToLogin"
       />
@@ -20,12 +20,12 @@
       <template v-else>
         <view class="home-hero st-panel-raise">
           <view class="home-hero__topline"></view>
-          <text class="home-hero__kicker">Today</text>
+          <text class="home-hero__kicker">今日</text>
           <text class="home-hero__value">{{ digest.flow.total }} L</text>
           <text class="home-hero__delta">{{ heroDeltaLabel }}</text>
 
           <view class="home-hero__peak">
-            <text class="home-hero__peak-label">Peak</text>
+            <text class="home-hero__peak-label">峰值</text>
             <view class="home-hero__peak-pill">{{ peakTimeLabel }}</view>
           </view>
 
@@ -43,35 +43,35 @@
               <view class="home-hero__caustic"></view>
             </view>
             <view class="home-hero__depth-pill">
-              <text class="home-hero__depth-label">Synced</text>
+              <text class="home-hero__depth-label">记录</text>
               <text class="home-hero__depth-value">{{ digest.flow.points.length }}</text>
             </view>
           </view>
         </view>
 
         <view class="home-page__metrics">
-          <MetricCard label="Bill" :value="billValue" compact />
-          <MetricCard label="Quality" :value="qualityValue" compact />
-          <MetricCard label="Month" :value="monthValue" compact />
+          <MetricCard label="账单" :value="billValue" compact />
+          <MetricCard label="水质" :value="qualityValue" compact />
+          <MetricCard label="本月" :value="monthValue" compact />
         </view>
 
         <view class="home-alert st-panel-raise">
           <view class="home-alert__dot"></view>
-          <text class="home-alert__label">Alert</text>
+          <text class="home-alert__label">提醒</text>
           <text class="home-alert__copy">{{ primaryAlert }}</text>
         </view>
 
         <view class="home-page__quick-grid">
           <view class="home-quick-card st-panel-raise" @tap="goToDataCenter('flow')">
             <view class="home-quick-card__glow"></view>
-            <text class="home-quick-card__title">Data centre</text>
-            <view class="home-quick-card__action">Open</view>
+            <text class="home-quick-card__title">数据中心</text>
+            <view class="home-quick-card__action">查看</view>
           </view>
 
           <view class="home-quick-card st-panel-raise" @tap="goToDataCenter('bill')">
             <view class="home-quick-card__glow home-quick-card__glow--wide"></view>
-            <text class="home-quick-card__title">Bill notes</text>
-            <view class="home-quick-card__action">View bill</view>
+            <text class="home-quick-card__title">账单</text>
+            <view class="home-quick-card__action">查看</view>
           </view>
         </view>
 
@@ -79,7 +79,7 @@
           v-if="errorMessage"
           title="数据暂时不可用"
           :message="errorMessage"
-          action-text="重新加载"
+          action-text="再试一次"
           @action="loadDigest"
         />
       </template>
@@ -126,18 +126,18 @@ const orderedFlowRecords = computed(() => {
 const heroDeltaLabel = computed(() => {
   const ordered = orderedFlowRecords.value;
   if (ordered.length < 2) {
-    return loading.value ? 'Syncing latest reading...' : 'Waiting for another reading';
+    return loading.value ? '正在更新数据...' : '等待下一次读数';
   }
 
   const latest = Number(ordered[ordered.length - 1]?.flow_rate || 0);
   const previous = Number(ordered[ordered.length - 2]?.flow_rate || 0);
   if (!previous) {
-    return `${latest} L in the latest reading`;
+    return `最新读数 ${latest} L`;
   }
 
   const delta = latest - previous;
   const ratio = Math.round((Math.abs(delta) / previous) * 100);
-  return `${delta >= 0 ? '+' : '-'}${ratio}% vs previous reading`;
+  return `较上次${delta >= 0 ? '上升' : '下降'} ${ratio}%`;
 });
 
 const peakTimeLabel = computed(() => {
@@ -159,15 +159,15 @@ const flowLevelRatio = computed(() => {
 });
 const waterLevelHeight = computed(() => `${Math.round(flowLevelRatio.value * 100)}%`);
 
-const billValue = computed(() => (digest.value.bill.latest ? `¥${digest.value.bill.latest}` : 'Pending'));
+const billValue = computed(() => (digest.value.bill.latest ? `¥${digest.value.bill.latest}` : '待出账'));
 const qualityValue = computed(() => {
-  if (digest.value.quality.statusTone === 'watch') return 'Watch';
-  if (digest.value.quality.statusTone === 'steady') return 'Steady';
-  return 'Safe';
+  if (digest.value.quality.statusTone === 'watch') return '留意';
+  if (digest.value.quality.statusTone === 'steady') return '平稳';
+  return '安全';
 });
 const monthValue = computed(() => `${(digest.value.flow.total / 1000).toFixed(1)} m3`);
 const primaryAlert = computed(() => {
-  return digest.value.alerts[0] || 'No anomalies';
+  return digest.value.alerts[0] || '暂无异常';
 });
 
 onShow(() => {
@@ -209,8 +209,8 @@ async function loadDigest() {
       billRecords: bills,
       qualityRecords: quality,
     });
-  } catch (error: any) {
-    errorMessage.value = error?.message || '数据暂时不可用，请稍后再试。';
+  } catch {
+    errorMessage.value = '暂时没有加载成功，请稍后再试。';
   } finally {
     loading.value = false;
   }

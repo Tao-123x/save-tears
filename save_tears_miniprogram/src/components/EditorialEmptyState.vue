@@ -23,7 +23,7 @@ withDefaults(
     actionText?: string;
   }>(),
   {
-    kicker: 'No Data',
+    kicker: '提示',
     actionText: '',
   },
 );

@@ -28,6 +28,46 @@ docker compose up --build
 
 ---
 
+0.1 服务器生产部署（域名 + HTTPS）
+
+生产环境推荐使用 `docker-compose.prod.yml`。它会让：
+- `https://你的域名/` 访问 H5 前端
+- `https://你的域名/api/` 转发到后端
+- 后端 `8000` 和前端容器 `80` 不直接暴露到公网
+
+服务器前置条件：
+- 域名 DNS 的 `A` 记录已指向服务器公网 IP
+- 腾讯云轻量服务器防火墙已放行 `80` 和 `443`
+- 服务器已安装 Docker 和 Docker Compose
+
+部署步骤：
+
+```bash
+git clone https://github.com/Tao-123x/save-tears.git
+cd save-tears
+git checkout taox/save-tears-project-upload
+
+cp .env.production.example .env.production
+nano .env.production
+
+docker compose --env-file .env.production -f docker-compose.prod.yml up -d --build
+```
+
+`.env.production` 至少需要填写：
+
+```bash
+DOMAIN=你的域名
+ACME_EMAIL=你的邮箱
+SAVE_TEARS_SECRET=一串足够长的随机密钥
+SAVE_TEARS_TOKEN_TTL=86400
+```
+
+成功后访问：
+- 前端：`https://你的域名/`
+- 后端健康检查：`https://你的域名/api/`
+
+---
+
 1. 启动后端 (Backend)
 
 后端提供 API 服务，必须首先启动。

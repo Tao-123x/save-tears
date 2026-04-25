@@ -67,6 +67,21 @@ save_tears/
 
 The Docker setup uses a named volume for the backend SQLite database, so a fresh collaborator environment starts with an empty database. Register a new account first if no users exist yet.
 
+### Production Deployment
+Use the production compose file when deploying to a server with a domain name:
+
+```bash
+cp .env.production.example .env.production
+nano .env.production
+docker compose --env-file .env.production -f docker-compose.prod.yml up -d --build
+```
+
+The production stack serves:
+- H5 frontend at `https://<DOMAIN>/`
+- Backend API through `https://<DOMAIN>/api/`
+
+Open ports `80` and `443` in the server firewall before starting the stack. Keep backend port `8000` private.
+
 ### Running the Backend
 1. Navigate to the directory: `cd save_tears_backend`
 2. Create a virtual environment: `python3 -m venv .venv && source .venv/bin/activate`

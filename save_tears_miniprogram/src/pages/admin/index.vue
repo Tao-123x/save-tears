@@ -2,24 +2,24 @@
   <EditorialPage tone="deep" compact>
     <view class="admin-page">
       <view class="admin-page__header st-panel-raise">
-        <text class="st-kicker">Admin</text>
-        <text class="st-display admin-page__headline">Admin</text>
+        <text class="st-kicker">管理</text>
+        <text class="st-display admin-page__headline">住户管理</text>
       </view>
 
-      <view v-if="loading" class="admin-page__loading st-panel-raise">正在整理住户列表...</view>
+      <view v-if="loading" class="admin-page__loading st-panel-raise">正在加载住户列表...</view>
       <EditorialEmptyState
         v-else-if="errorMessage"
-        title="管理员数据暂时不可用"
+        title="住户列表暂时不可用"
         :message="errorMessage"
-        action-text="重新加载"
+        action-text="再试一次"
         @action="loadAdminDesk"
       />
 
       <template v-else>
         <view class="admin-page__stats">
-          <AdminStatCard label="Residents" :value="String(overview.totalUsers)" />
-          <AdminStatCard label="Flags" :value="String(overview.roomsMissing.length)" />
-          <AdminStatCard label="Active" :value="activeRate" />
+          <AdminStatCard label="住户" :value="String(overview.totalUsers)" />
+          <AdminStatCard label="待处理" :value="String(overview.roomsMissing.length)" />
+          <AdminStatCard label="完整率" :value="activeRate" />
         </view>
 
         <view class="admin-search st-panel-raise">
@@ -28,7 +28,7 @@
             v-model="searchText"
             class="admin-search__field"
             type="text"
-            placeholder="Search room or user"
+            placeholder="搜索住户或房间"
             placeholder-class="admin-search__placeholder"
           />
           <view class="admin-search__dot"></view>
@@ -36,7 +36,7 @@
 
         <view class="admin-list st-panel-raise">
           <view class="admin-list__topline"></view>
-          <text class="admin-list__title">Resident list</text>
+          <text class="admin-list__title">住户列表</text>
 
           <EditorialEmptyState
             v-if="!filteredUsers.length"
@@ -61,7 +61,7 @@
 
         <view class="admin-note st-panel-raise">
           <view class="admin-note__topline"></view>
-          <text class="admin-note__title">Watchlist</text>
+          <text class="admin-note__title">待处理</text>
           <text class="admin-note__copy">
             {{ overview.roomsMissing.length ? `缺失房间号：${overview.roomsMissing.join('、')}` : '当前没有缺失房间号的账号。' }}
           </text>
@@ -140,8 +140,8 @@ async function loadAdminDesk() {
       room_number: user.room_number,
       role: user.role,
     }));
-  } catch (error: any) {
-    errorMessage.value = error?.message || '用户列表加载失败，请检查后端服务。';
+  } catch {
+    errorMessage.value = '住户列表暂时没有加载成功，请稍后再试。';
   } finally {
     loading.value = false;
   }
@@ -152,9 +152,9 @@ function isAdminRole(role?: string | null) {
 }
 
 function tagText(user: UserRecord) {
-  if (isAdminRole(user.role)) return 'Admin';
-  if (!String(user.room_number || '').trim()) return 'Flagged';
-  return `Room ${user.room_number}`;
+  if (isAdminRole(user.role)) return '管理员';
+  if (!String(user.room_number || '').trim()) return '待处理';
+  return `房间 ${user.room_number}`;
 }
 
 function tagClass(user: UserRecord) {

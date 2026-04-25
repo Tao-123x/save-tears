@@ -1,0 +1,48 @@
+services:
+  backend:
+    build:
+      context: ./save_tears_backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      SAVE_TEARS_DB_URL: sqlite:////app/data/save_tears.db
+      SAVE_TEARS_SECRET: ${SAVE_TEARS_SECRET:?set SAVE_TEARS_SECRET in .env.production}
+      SAVE_TEARS_TOKEN_TTL: ${SAVE_TEARS_TOKEN_TTL:-86400}
+    volumes:
+      - save-tears-backend-data:/app/data
+    expose:
+      - "8000"
+
+  frontend:
+    build:
+      context: ./save_tears_miniprogram
+      dockerfile: Dockerfile
+      args:
+        VITE_API_BASE_URL: /api
+    restart: unless-stopped
+    depends_on:
+      - backend
+    expose:
+      - "80"
+
+  caddy:
+    image: caddy:2.8-alpine
+    restart: unless-stopped
+    depends_on:
+      - frontend
+      - backend
+    environment:
+      DOMAIN: ${DOMAIN:?set DOMAIN in .env.production}
+      ACME_EMAIL: ${ACME_EMAIL:?set ACME_EMAIL in .env.production}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+
+volumes:
+  save-tears-backend-data:
+  caddy-data:
+  caddy-config:

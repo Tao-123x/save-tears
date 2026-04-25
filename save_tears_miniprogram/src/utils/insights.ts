@@ -149,7 +149,7 @@ export function buildWaterFlowInsights(records: WaterFlowRecord[]) {
     })),
     summary:
       values.length === 0
-        ? '还没有上传用水数据。'
+        ? '暂无用水记录。'
         : `最近 ${values.length} 条记录里，峰值为 ${peak}L，平均每次 ${average}L。`,
   };
 }
@@ -173,7 +173,7 @@ export function buildWaterBillInsights(records: WaterBillRecord[]) {
     })),
     summary:
       values.length === 0
-        ? '账单还没有同步。'
+        ? '暂无账单记录。'
         : latest <= previous
           ? '最近一期账单低于或持平上期。'
           : '最近一期账单高于上期，需要留意用水变化。',
@@ -245,17 +245,17 @@ export function buildHomeDigest(input: {
     } satisfies MetricHighlight,
     billMetric: {
       label: '最近账单',
-      value: bill.latest ? `¥${bill.latest}` : '待同步',
+      value: bill.latest ? `¥${bill.latest}` : '待更新',
       helper: bill.summary,
       tone: bill.deltaFromPrevious > 0 ? 'warning' : 'mist',
     } satisfies MetricHighlight,
     qualityMetric: {
       label: '最近浊度',
-      value: quality.latest ? `${quality.latest} NTU` : '待同步',
+      value: quality.latest ? `${quality.latest} NTU` : '待更新',
       helper: quality.summary,
       tone: quality.statusTone === 'watch' ? 'warning' : 'mist',
     } satisfies MetricHighlight,
-    editorNote: `${input.username || '住户'}，这页把你的用水、账单与水质变化整理成一份可以快速阅读的节水简报。`,
+    editorNote: `${input.username || '住户'}，这是你的用水、账单与水质概览。`,
     alerts,
     flow,
     bill,

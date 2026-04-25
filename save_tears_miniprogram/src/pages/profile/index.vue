@@ -2,28 +2,29 @@
   <EditorialPage tone="mist">
     <view class="profile-page">
       <view class="profile-page__header st-panel-raise">
-        <text class="st-kicker">Account</text>
-        <text class="st-display profile-page__headline">Profile</text>
+        <text class="st-kicker">我的</text>
+        <text class="st-display profile-page__headline">账户</text>
       </view>
 
       <view class="profile-hero st-panel-raise">
         <view class="profile-hero__topline"></view>
         <view class="profile-hero__avatar">{{ avatarLabel }}</view>
         <view class="profile-hero__copy">
-          <text class="profile-hero__name">{{ currentUser?.username || 'Guest' }}</text>
+          <text class="profile-hero__name">{{ currentUser?.username || '访客' }}</text>
           <text class="profile-hero__meta">
-            {{ currentUser?.room_number ? `Room ${currentUser.room_number}` : 'No room linked yet' }}
-            <text v-if="isAdmin"> · admin access</text>
+            {{ currentUser?.room_number ? `房间 ${currentUser.room_number}` : '未绑定房间' }}
+            <text v-if="isAdmin"> · 管理员</text>
           </text>
         </view>
-        <view v-if="isAdmin" class="profile-hero__admin" @tap="goToAdmin">Admin entry</view>
+        <view v-if="isAdmin" class="profile-hero__admin" @tap="goToAdmin">管理</view>
       </view>
 
       <view class="profile-setting st-panel-raise">
         <view class="profile-setting__topline"></view>
         <view class="profile-setting__row">
           <view class="profile-setting__copy">
-            <text class="profile-setting__title">Billing alerts</text>
+            <text class="profile-setting__title">账单提醒</text>
+            <text class="profile-setting__caption">账单提醒</text>
           </view>
           <switch :checked="dailyDigestEnabled" color="#2f8cff" @change="handleToggle('dailyDigestEnabled', $event)" />
         </view>
@@ -33,7 +34,8 @@
         <view class="profile-setting__topline"></view>
         <view class="profile-setting__row">
           <view class="profile-setting__copy">
-            <text class="profile-setting__title">Quality alerts</text>
+            <text class="profile-setting__title">水质提醒</text>
+            <text class="profile-setting__caption">水质提醒</text>
           </view>
           <switch :checked="anomalyAlertsEnabled" color="#2f8cff" @change="handleToggle('anomalyAlertsEnabled', $event)" />
         </view>
@@ -41,29 +43,10 @@
 
       <view class="profile-system st-panel-raise">
         <view class="profile-system__topline"></view>
-        <text class="profile-system__title">{{ isAdmin ? 'System' : 'Support' }}</text>
-        <template v-if="isAdmin">
-          <text class="profile-system__label">Service endpoint</text>
-          <input
-            v-model="apiBaseUrl"
-            class="st-field profile-system__field"
-            type="text"
-            placeholder="https://internal.save-tears.local"
-            placeholder-class="st-field-placeholder"
-          />
-          <text class="profile-system__resolved">Current connection: {{ resolvedApiBaseUrl }}</text>
-          <view class="profile-system__actions">
-            <view class="st-button profile-system__action" @tap="handleSaveApiBaseUrl">Save connection</view>
-            <view class="st-button st-button--soft profile-system__action" @tap="handleHelp">Help centre</view>
-          </view>
-          <view class="profile-system__actions profile-system__actions--secondary">
-            <view class="st-button st-button--soft profile-system__action" @tap="handleResetApiBaseUrl">Reset connection</view>
-            <view class="st-button st-button--soft profile-system__action" @tap="handleLogout">Log out</view>
-          </view>
-        </template>
-        <view v-else class="profile-system__actions profile-system__actions--single">
-          <view class="st-button st-button--soft profile-system__action" @tap="handleHelp">Help centre</view>
-          <view class="st-button st-button--soft profile-system__action" @tap="handleLogout">Log out</view>
+        <text class="profile-system__title">帮助</text>
+        <view class="profile-system__actions profile-system__actions--single">
+          <view class="st-button st-button--soft profile-system__action" @tap="handleHelp">联系客服</view>
+          <view class="st-button st-button--soft profile-system__action" @tap="handleLogout">退出登录</view>
         </view>
       </view>
     </view>
@@ -75,13 +58,10 @@ import { computed, ref } from 'vue';
 import { onShow } from '@dcloudio/uni-app';
 
 import EditorialPage from '@/components/EditorialPage.vue';
-import { getResolvedApiBaseUrl, getStoredApiBaseUrl, setApiBaseUrl } from '@/api/index';
 import { getResidentPreferences, saveResidentPreferences } from '@/utils/preferences';
 import { clearStoredUser, getStoredUser, isAdminUser, type StoredUser } from '@/utils/session';
 
 const currentUser = ref<StoredUser | null>(null);
-const apiBaseUrl = ref('');
-const resolvedApiBaseUrl = ref(getResolvedApiBaseUrl());
 const dailyDigestEnabled = ref(true);
 const anomalyAlertsEnabled = ref(true);
 
@@ -90,8 +70,6 @@ const avatarLabel = computed(() => (currentUser.value?.username || 'G').slice(0,
 
 onShow(() => {
   currentUser.value = getStoredUser();
-  apiBaseUrl.value = getStoredApiBaseUrl();
-  resolvedApiBaseUrl.value = getResolvedApiBaseUrl();
 
   const preferences = getResidentPreferences();
   dailyDigestEnabled.value = preferences.dailyDigestEnabled;
@@ -111,22 +89,9 @@ function handleToggle(key: 'dailyDigestEnabled' | 'anomalyAlertsEnabled', event:
   });
 }
 
-function handleSaveApiBaseUrl() {
-  setApiBaseUrl(apiBaseUrl.value.trim());
-  resolvedApiBaseUrl.value = getResolvedApiBaseUrl();
-  uni.showToast({ title: '连接设置已保存', icon: 'success' });
-}
-
-function handleResetApiBaseUrl() {
-  setApiBaseUrl('');
-  apiBaseUrl.value = '';
-  resolvedApiBaseUrl.value = getResolvedApiBaseUrl();
-  uni.showToast({ title: '已恢复默认连接', icon: 'success' });
-}
-
 function handleHelp() {
   uni.showToast({
-    title: '请联系管理员或项目维护人',
+    title: '请联系物业服务人员',
     icon: 'none',
   });
 }
@@ -259,8 +224,7 @@ function goToAdmin() {
   color: var(--st-text);
 }
 
-.profile-setting__desc,
-.profile-system__resolved {
+.profile-setting__caption {
   display: block;
   margin-top: 8rpx;
   font-size: 22rpx;
@@ -268,27 +232,11 @@ function goToAdmin() {
   color: var(--st-text-soft);
 }
 
-.profile-system__label {
-  display: block;
-  margin-top: 18rpx;
-  font-size: 22rpx;
-  color: var(--st-text-soft);
-}
-
-.profile-system__field {
-  margin-top: 12rpx;
-  border-radius: 22rpx;
-}
-
 .profile-system__actions {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 14rpx;
   margin-top: 20rpx;
-}
-
-.profile-system__actions--secondary {
-  margin-top: 14rpx;
 }
 
 .profile-system__actions--single {
