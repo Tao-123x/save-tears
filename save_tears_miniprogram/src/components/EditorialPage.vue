@@ -24,7 +24,7 @@
         target="_blank"
         rel="noopener noreferrer"
       >
-        <span class="icp-footer__badge" aria-hidden="true">安</span>
+        <img class="icp-footer__badge" src="/static/images/gongan.png" alt="" aria-hidden="true" />
         鄂公网安备42118202000165号
       </a>
     </footer>
@@ -237,16 +237,10 @@ withDefaults(
 }
 
 .icp-footer__badge {
-  display: inline-flex;
+  display: inline-block;
   width: 24rpx;
   height: 24rpx;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  background: #d84731;
-  color: #fff7dd;
-  font-size: 14rpx;
-  font-weight: 700;
-  line-height: 1;
+  flex: 0 0 auto;
+  object-fit: contain;
 }
 </style>
