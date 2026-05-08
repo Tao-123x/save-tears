@@ -12,6 +12,23 @@
     <view class="editorial-page__content">
       <slot />
     </view>
+    <!-- #ifdef H5 -->
+    <footer class="icp-footer" aria-label="网站备案信息">
+      <a class="icp-footer__link" href="https://beian.miit.gov.cn/" target="_blank" rel="noopener noreferrer">
+        鄂ICP备2026020752号-1
+      </a>
+      <span class="icp-footer__divider">|</span>
+      <a
+        class="icp-footer__link icp-footer__link--police"
+        href="https://beian.mps.gov.cn/#/query/webSearch?code=42118202000165"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        <span class="icp-footer__badge" aria-hidden="true">安</span>
+        鄂公网安备42118202000165号
+      </a>
+    </footer>
+    <!-- #endif -->
   </view>
 </template>
 
@@ -182,5 +199,54 @@ withDefaults(
 .editorial-page__content {
   position: relative;
   z-index: 1;
+}
+
+.icp-footer {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 10rpx 16rpx;
+  padding: 34rpx 20rpx calc(18rpx + env(safe-area-inset-bottom));
+  color: rgba(95, 126, 149, 0.84);
+  font-size: 22rpx;
+  line-height: 1.5;
+  text-align: center;
+}
+
+.icp-footer__link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8rpx;
+  color: rgba(95, 126, 149, 0.9);
+  text-decoration: none;
+}
+
+.icp-footer__link:hover {
+  color: var(--st-accent-deep);
+}
+
+.icp-footer__link--police {
+  white-space: nowrap;
+}
+
+.icp-footer__divider {
+  color: rgba(125, 152, 174, 0.58);
+}
+
+.icp-footer__badge {
+  display: inline-flex;
+  width: 24rpx;
+  height: 24rpx;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: #d84731;
+  color: #fff7dd;
+  font-size: 14rpx;
+  font-weight: 700;
+  line-height: 1;
 }
 </style>
