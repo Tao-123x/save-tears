@@ -24,7 +24,7 @@
     {
       "path": "pages/data/index",
       "style": {
-        "navigationBarTitleText": "数据中心",
+        "navigationBarTitleText": "节水数据",
         "navigationStyle": "custom"
       }
     },
@@ -38,28 +38,28 @@
     {
       "path": "pages/admin/index",
       "style": {
-        "navigationBarTitleText": "管理员页",
+        "navigationBarTitleText": "节水管理",
         "navigationStyle": "custom"
       }
     },
     {
       "path": "pages/water-flow/index",
       "style": {
-        "navigationBarTitleText": "用水表",
+        "navigationBarTitleText": "自来水记录",
         "navigationStyle": "custom"
       }
     },
     {
       "path": "pages/sewage-turbidity/index",
       "style": {
-        "navigationBarTitleText": "污水表",
+        "navigationBarTitleText": "灰水记录",
         "navigationStyle": "custom"
       }
     },
     {
       "path": "pages/water-bill/index",
       "style": {
-        "navigationBarTitleText": "账单",
+        "navigationBarTitleText": "节水计划",
         "navigationStyle": "custom"
       }
     }

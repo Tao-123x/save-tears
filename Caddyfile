@@ -19,6 +19,5 @@
 }
 
 {$DOMAIN} {
-    tls /certs/savetear.cloud_bundle.crt /certs/savetear.cloud.key
     import app_proxy
 }

@@ -9,6 +9,10 @@ export function normalizeApiBaseUrl(baseUrl?: string | null) {
   return String(baseUrl || '').trim().replace(/\/+$/, '');
 }
 
+export function encodeRoomPath(roomNumber: string) {
+  return encodeURIComponent(String(roomNumber || '').trim());
+}
+
 export function resolveApiBaseUrl(options: ApiBaseResolutionOptions = {}) {
   const customBaseUrl = normalizeApiBaseUrl(options.customBaseUrl);
   if (customBaseUrl) {

@@ -23,10 +23,10 @@
         <view class="profile-setting__topline"></view>
         <view class="profile-setting__row">
           <view class="profile-setting__copy">
-            <text class="profile-setting__title">账单提醒</text>
-            <text class="profile-setting__caption">账单提醒</text>
+            <text class="profile-setting__title">节水目标提醒</text>
+            <text class="profile-setting__caption">节水目标提醒</text>
           </view>
-          <switch :checked="dailyDigestEnabled" color="#2f8cff" @change="handleToggle('dailyDigestEnabled', $event)" />
+          <switch :checked="savingTargetRemindersEnabled" color="#2f8cff" @change="handleToggle('savingTargetRemindersEnabled', $event)" />
         </view>
       </view>
 
@@ -34,10 +34,10 @@
         <view class="profile-setting__topline"></view>
         <view class="profile-setting__row">
           <view class="profile-setting__copy">
-            <text class="profile-setting__title">水质提醒</text>
-            <text class="profile-setting__caption">水质提醒</text>
+            <text class="profile-setting__title">设备提醒</text>
+            <text class="profile-setting__caption">设备异常提醒</text>
           </view>
-          <switch :checked="anomalyAlertsEnabled" color="#2f8cff" @change="handleToggle('anomalyAlertsEnabled', $event)" />
+          <switch :checked="deviceAbnormalityAlertsEnabled" color="#2f8cff" @change="handleToggle('deviceAbnormalityAlertsEnabled', $event)" />
         </view>
       </view>
 
@@ -62,8 +62,8 @@ import { getResidentPreferences, saveResidentPreferences } from '@/utils/prefere
 import { clearStoredUser, getStoredUser, isAdminUser, type StoredUser } from '@/utils/session';
 
 const currentUser = ref<StoredUser | null>(null);
-const dailyDigestEnabled = ref(true);
-const anomalyAlertsEnabled = ref(true);
+const savingTargetRemindersEnabled = ref(true);
+const deviceAbnormalityAlertsEnabled = ref(true);
 
 const isAdmin = computed(() => isAdminUser(currentUser.value));
 const avatarLabel = computed(() => (currentUser.value?.username || 'G').slice(0, 1).toUpperCase());
@@ -72,20 +72,20 @@ onShow(() => {
   currentUser.value = getStoredUser();
 
   const preferences = getResidentPreferences();
-  dailyDigestEnabled.value = preferences.dailyDigestEnabled;
-  anomalyAlertsEnabled.value = preferences.anomalyAlertsEnabled;
+  savingTargetRemindersEnabled.value = preferences.savingTargetRemindersEnabled;
+  deviceAbnormalityAlertsEnabled.value = preferences.deviceAbnormalityAlertsEnabled;
 });
 
-function handleToggle(key: 'dailyDigestEnabled' | 'anomalyAlertsEnabled', event: any) {
-  if (key === 'dailyDigestEnabled') {
-    dailyDigestEnabled.value = event.detail.value;
+function handleToggle(key: 'savingTargetRemindersEnabled' | 'deviceAbnormalityAlertsEnabled', event: any) {
+  if (key === 'savingTargetRemindersEnabled') {
+    savingTargetRemindersEnabled.value = event.detail.value;
   } else {
-    anomalyAlertsEnabled.value = event.detail.value;
+    deviceAbnormalityAlertsEnabled.value = event.detail.value;
   }
 
   saveResidentPreferences({
-    dailyDigestEnabled: dailyDigestEnabled.value,
-    anomalyAlertsEnabled: anomalyAlertsEnabled.value,
+    savingTargetRemindersEnabled: savingTargetRemindersEnabled.value,
+    deviceAbnormalityAlertsEnabled: deviceAbnormalityAlertsEnabled.value,
   });
 }
 

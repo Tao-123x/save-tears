@@ -1,6 +1,6 @@
-const DATA_TAB_KEY = 'resident_data_initial_tab';
+const DATA_TAB_KEY = 'resident_saving_data_initial_tab';
 
-export type ResidentDataTab = 'flow' | 'bill' | 'quality';
+export type ResidentDataTab = 'tap' | 'greywater' | 'trends' | 'plan';
 
 export function queueResidentDataTab(tab: ResidentDataTab) {
   if (typeof uni === 'undefined') {

@@ -3,7 +3,7 @@
     <view class="home-page">
       <view class="home-page__header st-panel-raise">
         <text class="st-kicker">首页</text>
-        <text class="st-display home-page__headline">用水概览</text>
+        <text class="st-display home-page__headline">节水概览</text>
         <text class="st-subtitle home-page__subline">
           {{ currentUser ? `${currentUser.room_number || '房间'}` : '请登录' }}
         </text>
@@ -12,7 +12,7 @@
       <EditorialEmptyState
         v-if="!currentUser"
         title="请先登录"
-        message="登录后查看用水概览"
+        message="登录后查看节水概览"
         action-text="去登录"
         @action="goToLogin"
       />
@@ -20,13 +20,13 @@
       <template v-else>
         <view class="home-hero st-panel-raise">
           <view class="home-hero__topline"></view>
-          <text class="home-hero__kicker">今日</text>
-          <text class="home-hero__value">{{ digest.flow.total }} L</text>
-          <text class="home-hero__delta">{{ heroDeltaLabel }}</text>
+          <text class="home-hero__kicker">今日节省</text>
+          <text class="home-hero__value">{{ overview.estimatedSavingsLiters }} L</text>
+          <text class="home-hero__delta">{{ overview.summary }}</text>
 
           <view class="home-hero__peak">
-            <text class="home-hero__peak-label">峰值</text>
-            <view class="home-hero__peak-pill">{{ peakTimeLabel }}</view>
+            <text class="home-hero__peak-label">替代率</text>
+            <view class="home-hero__peak-pill">{{ overview.replacementRateLabel }}</view>
           </view>
 
           <view class="home-hero__reservoir">
@@ -43,34 +43,34 @@
               <view class="home-hero__caustic"></view>
             </view>
             <view class="home-hero__depth-pill">
-              <text class="home-hero__depth-label">记录</text>
-              <text class="home-hero__depth-value">{{ digest.flow.points.length }}</text>
+              <text class="home-hero__depth-label">冲厕</text>
+              <text class="home-hero__depth-value">{{ overview.flushCount }}</text>
             </view>
           </view>
         </view>
 
         <view class="home-page__metrics">
-          <MetricCard label="账单" :value="billValue" compact />
-          <MetricCard label="水质" :value="qualityValue" compact />
-          <MetricCard label="本月" :value="monthValue" compact />
+          <MetricCard label="自来水" :value="tapWaterValue" compact />
+          <MetricCard label="灰水" :value="greywaterValue" compact />
+          <MetricCard label="目标" :value="overview.targetProgressLabel" compact />
         </view>
 
         <view class="home-alert st-panel-raise">
           <view class="home-alert__dot"></view>
-          <text class="home-alert__label">提醒</text>
-          <text class="home-alert__copy">{{ primaryAlert }}</text>
+          <text class="home-alert__label">AI 计划</text>
+          <text class="home-alert__copy">{{ planSummary }}</text>
         </view>
 
         <view class="home-page__quick-grid">
-          <view class="home-quick-card st-panel-raise" @tap="goToDataCenter('flow')">
+          <view class="home-quick-card st-panel-raise" @tap="goToDataCenter('tap')">
             <view class="home-quick-card__glow"></view>
             <text class="home-quick-card__title">数据中心</text>
             <view class="home-quick-card__action">查看</view>
           </view>
 
-          <view class="home-quick-card st-panel-raise" @tap="goToDataCenter('bill')">
+          <view class="home-quick-card st-panel-raise" @tap="goToDataCenter('plan')">
             <view class="home-quick-card__glow home-quick-card__glow--wide"></view>
-            <text class="home-quick-card__title">账单</text>
+            <text class="home-quick-card__title">节水计划</text>
             <view class="home-quick-card__action">查看</view>
           </view>
         </view>
@@ -94,12 +94,14 @@ import { onShow } from '@dcloudio/uni-app';
 import EditorialEmptyState from '@/components/EditorialEmptyState.vue';
 import EditorialPage from '@/components/EditorialPage.vue';
 import MetricCard from '@/components/MetricCard.vue';
-import { getSewageTurbidity, getWaterBill, getWaterFlow } from '@/api/index';
 import {
-  buildHomeDigest,
-  type WaterBillRecord,
-  type WaterFlowRecord,
-  type WaterQualityRecord,
+  getLatestSavingPlan,
+  getSavingStats,
+  type SavingPlan,
+  type SavingStats,
+} from '@/api/index';
+import {
+  buildSavingOverview,
 } from '@/utils/insights';
 import { queueResidentDataTab, type ResidentDataTab } from '@/utils/data-nav';
 import { getStoredUser, type StoredUser } from '@/utils/session';
@@ -107,67 +109,27 @@ import { getStoredUser, type StoredUser } from '@/utils/session';
 const currentUser = ref<StoredUser | null>(null);
 const loading = ref(false);
 const errorMessage = ref('');
-const flowRecords = ref<WaterFlowRecord[]>([]);
-const billRecords = ref<WaterBillRecord[]>([]);
-const qualityRecords = ref<WaterQualityRecord[]>([]);
-const digest = ref(
-  buildHomeDigest({
-    username: '',
-    flowRecords: [],
-    billRecords: [],
-    qualityRecords: [],
-  }),
-);
+const savingStats = ref<SavingStats | null>(null);
+const latestPlan = ref<SavingPlan | null>(null);
 
-const orderedFlowRecords = computed(() => {
-  return [...flowRecords.value].sort((left, right) => left.timestamp.localeCompare(right.timestamp));
-});
-
-const heroDeltaLabel = computed(() => {
-  const ordered = orderedFlowRecords.value;
-  if (ordered.length < 2) {
-    return loading.value ? '正在更新数据...' : '等待下一次读数';
-  }
-
-  const latest = Number(ordered[ordered.length - 1]?.flow_rate || 0);
-  const previous = Number(ordered[ordered.length - 2]?.flow_rate || 0);
-  if (!previous) {
-    return `最新读数 ${latest} L`;
-  }
-
-  const delta = latest - previous;
-  const ratio = Math.round((Math.abs(delta) / previous) * 100);
-  return `较上次${delta >= 0 ? '上升' : '下降'} ${ratio}%`;
-});
-
-const peakTimeLabel = computed(() => {
-  if (!flowRecords.value.length) {
-    return '--:--';
-  }
-
-  const peakRecord = [...flowRecords.value].sort((left, right) => Number(right.flow_rate || 0) - Number(left.flow_rate || 0))[0];
-  const source = String(peakRecord?.timestamp || '');
-  const matched = source.match(/T(\d{2}:\d{2})/);
-  return matched?.[1] || source.slice(11, 16) || '--:--';
-});
+const overview = computed(() => buildSavingOverview({
+  tapWaterLiters: savingStats.value?.tap_water_liters,
+  greywaterLiters: savingStats.value?.greywater_liters,
+  flushCount: savingStats.value?.flush_count,
+  targetFlushCount: latestPlan.value?.target_flush_count,
+  latestPlanText: latestPlan.value?.plan_text,
+}));
 
 const flowLevelRatio = computed(() => {
-  const total = Number(digest.value.flow.total || 0);
-  const peak = Number(digest.value.flow.peak || 0);
-  const ratio = total && peak ? total / Math.max(peak * 3, 1) : 0.5;
+  const ratio = overview.value.replacementRate || 0.5;
   return Math.min(0.78, Math.max(0.44, ratio));
 });
 const waterLevelHeight = computed(() => `${Math.round(flowLevelRatio.value * 100)}%`);
 
-const billValue = computed(() => (digest.value.bill.latest ? `¥${digest.value.bill.latest}` : '待出账'));
-const qualityValue = computed(() => {
-  if (digest.value.quality.statusTone === 'watch') return '留意';
-  if (digest.value.quality.statusTone === 'steady') return '平稳';
-  return '安全';
-});
-const monthValue = computed(() => `${(digest.value.flow.total / 1000).toFixed(1)} m3`);
-const primaryAlert = computed(() => {
-  return digest.value.alerts[0] || '暂无异常';
+const tapWaterValue = computed(() => `${overview.value.tapWaterLiters} L`);
+const greywaterValue = computed(() => `${overview.value.greywaterLiters} L`);
+const planSummary = computed(() => {
+  return overview.value.latestPlanPreview || '暂无 AI 节水计划，可在数据中心生成。';
 });
 
 onShow(() => {
@@ -179,38 +141,25 @@ async function loadDigest() {
   errorMessage.value = '';
 
   if (!currentUser.value?.room_number) {
-    flowRecords.value = [];
-    billRecords.value = [];
-    qualityRecords.value = [];
-    digest.value = buildHomeDigest({
-      username: currentUser.value?.username || '',
-      flowRecords: [],
-      billRecords: [],
-      qualityRecords: [],
-    });
+    savingStats.value = null;
+    latestPlan.value = null;
     return;
   }
 
   loading.value = true;
 
   try {
-    const [flow, bills, quality] = await Promise.all([
-      getWaterFlow(currentUser.value.room_number),
-      getWaterBill(currentUser.value.room_number),
-      getSewageTurbidity(currentUser.value.room_number),
+    const [statsResult, planResult] = await Promise.allSettled([
+      getSavingStats(currentUser.value.room_number),
+      getLatestSavingPlan(currentUser.value.room_number),
     ]);
 
-    flowRecords.value = flow;
-    billRecords.value = bills;
-    qualityRecords.value = quality;
-    digest.value = buildHomeDigest({
-      username: currentUser.value.username || '',
-      flowRecords: flow,
-      billRecords: bills,
-      qualityRecords: quality,
-    });
-  } catch {
-    errorMessage.value = '暂时没有加载成功，请稍后再试。';
+    savingStats.value = statsResult.status === 'fulfilled' ? statsResult.value : null;
+    latestPlan.value = planResult.status === 'fulfilled' ? planResult.value : null;
+
+    if (statsResult.status === 'rejected' && planResult.status === 'rejected') {
+      errorMessage.value = '暂时没有加载成功，已显示空状态。';
+    }
   } finally {
     loading.value = false;
   }

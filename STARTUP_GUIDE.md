@@ -31,7 +31,7 @@ docker compose up --build
 0.1 服务器生产部署（域名 + HTTPS）
 
 生产环境推荐使用 `docker-compose.prod.yml`。它会让：
-- `https://你的域名/` 访问 H5 前端
+- `https://你的域名/` 访问 H5 网页端，也就是 `save_tears_miniprogram` 的 H5 构建
 - `https://你的域名/api/` 转发到后端
 - 后端 `8000` 和前端容器 `80` 不直接暴露到公网
 
@@ -39,9 +39,7 @@ docker compose up --build
 - 域名 DNS 的 `A` 记录已指向服务器公网 IP
 - 腾讯云轻量服务器防火墙已放行 `80` 和 `443`
 - 服务器已安装 Docker 和 Docker Compose
-- 如果使用腾讯云手动 SSL 证书，把 Nginx 证书包中的 `.crt` 和 `.key` 放到仓库根目录的 `certs/`，文件名保持：
-  - `certs/savetear.cloud_bundle.crt`
-  - `certs/savetear.cloud.key`
+- Caddy 会根据 `DOMAIN` 和 `ACME_EMAIL` 自动申请 HTTPS 证书，不需要手动提交证书文件
 
 部署步骤：
 
@@ -62,6 +60,7 @@ docker compose --env-file .env.production -f docker-compose.prod.yml up -d --bui
 DOMAIN=你的域名
 ACME_EMAIL=你的邮箱
 SAVE_TEARS_SECRET=一串足够长的随机密钥
+SAVE_TEARS_THINGCLOUD_WEBHOOK_SECRET=另一串足够长的随机密钥
 SAVE_TEARS_TOKEN_TTL=86400
 SAVE_TEARS_ADMIN_USERNAME=admin
 SAVE_TEARS_ADMIN_PASSWORD=一个强管理员密码
@@ -73,10 +72,17 @@ SAVE_TEARS_ADMIN_ROOM=HQ
 - 后端健康检查：`https://你的域名/api/health`
 
 说明：
-- 当前生产 Caddy 配置会保留 `:80` 入口用于 IP 访问，同时为 `DOMAIN` 配置手动 TLS 证书。
+- 当前生产 Caddy 配置会保留 `:80` 入口用于 IP 访问，同时为 `DOMAIN` 自动配置 HTTPS。
 - `SAVE_TEARS_ADMIN_USERNAME` 和 `SAVE_TEARS_ADMIN_PASSWORD` 只用于首次创建管理员账号。
 - 如果管理员已存在，默认不会覆盖密码；确实需要重置时，把 `SAVE_TEARS_ADMIN_RESET_PASSWORD=1` 后重启一次，再改回 `0`。
 - 后端会把新注册用户密码保存为哈希；旧的明文密码账号在成功登录后会自动升级为哈希。
+- `SAVE_TEARS_THINGCLOUD_WEBHOOK_SECRET` 用于 ThingCloud 或硬件网关上报灰水冲厕事件，不要和管理员密码或 `SAVE_TEARS_SECRET` 使用同一个值。
+
+网页端部署后检查：
+- 首页标题应为 `节水概览`。
+- 数据中心应出现 `自来水`、`灰水`、`趋势`、`计划` 四个 Tab。
+- 管理员从 `我的 -> 管理` 进入后，应看到 `节水管理` 页面。
+- 在 `计划` Tab 点击生成计划时，即使没有接入 LLM API，也应返回规则版节水计划。
 
 ---
 
@@ -115,6 +121,8 @@ SAVE_TEARS_ADMIN_ROOM=HQ
 ##  2. 启动 H5 前端 (Frontend)
 
 当前仓库里的可运行浏览器前端是 `save_tears_miniprogram` 的 H5 模式。
+它不是独立的 `save_tears_frontend` 目录；网页端和小程序端共用 `save_tears_miniprogram` 源码。
+当前 H5 网页端主线是灰水节水系统，包括 `节水概览`、`节水数据`、`AI 节水计划` 和管理员 `节水管理`。
 
 ### 步骤
 1. **进入前端目录**
@@ -135,6 +143,12 @@ SAVE_TEARS_ADMIN_ROOM=HQ
 **成功标志**: 终端显示访问地址，通常是 `http://localhost:5173`。
 
 H5 本地开发默认请求 `http://<当前浏览器主机>:8000`。如果需要连接到别的后端地址，请在启动前设置 `VITE_API_BASE_URL`。
+
+例如连接生产后端：
+
+```bash
+VITE_API_BASE_URL=https://你的域名/api npm run dev:h5
+```
 
 ---
 
@@ -215,6 +229,8 @@ After startup:
 Notes:
 - The containerized backend stores SQLite data in a Docker volume.
 - A fresh environment usually has no users yet, so register an account before trying to log in.
+- The web frontend is the H5 build of `save_tears_miniprogram`; there is no separate deployed `save_tears_frontend` directory.
+- The current web experience is the greywater saving system: `节水概览`, `节水数据`, `AI 节水计划`, and admin `节水管理`.
 
 ---
 
@@ -254,6 +270,7 @@ If you want to use MySQL instead, set `SAVE_TEARS_DB_URL` before starting the se
 ##  2. Start the Web Frontend
 
 The runnable browser frontend in this repository is the H5 mode of `save_tears_miniprogram`.
+It shares source code with the mini program. The web frontend currently presents the greywater saving workflow, not a separate legacy web dashboard.
 
 ### Steps
 1. **Enter the Frontend Directory**
@@ -275,6 +292,12 @@ The runnable browser frontend in this repository is the H5 mode of `save_tears_m
 
 For H5 local development, the frontend defaults to `http://<current-browser-host>:8000`.
 If you need another backend address, set `VITE_API_BASE_URL` before startup.
+
+Example:
+
+```bash
+VITE_API_BASE_URL=https://YOUR_DOMAIN/api npm run dev:h5
+```
 
 ---
 

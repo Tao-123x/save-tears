@@ -12,7 +12,7 @@
       <EditorialEmptyState
         v-if="!currentUser"
         title="请先登录再查看数据中心"
-        message="登录后查看用水、账单和水质记录"
+        message="登录后查看自来水、灰水、趋势和节水计划"
         action-text="去登录"
         @action="goToLogin"
       />
@@ -42,6 +42,13 @@
             @action="loadDataCenter"
           />
           <MiniTrendChart v-else :points="currentPanel.points" :unit="currentPanel.unit" />
+          <view
+            v-if="selectedTab === 'plan' && !loading"
+            class="st-button data-card__action"
+            @tap="handleGeneratePlan"
+          >
+            {{ generatingPlan ? '生成中...' : '生成计划' }}
+          </view>
         </view>
 
         <view class="data-page__metrics">
@@ -90,42 +97,51 @@ import EditorialPage from '@/components/EditorialPage.vue';
 import MetricCard from '@/components/MetricCard.vue';
 import MiniTrendChart from '@/components/MiniTrendChart.vue';
 import SegmentTabs from '@/components/SegmentTabs.vue';
-import { getSewageTurbidity, getWaterBill, getWaterFlow } from '@/api/index';
 import {
-  buildWaterBillInsights,
+  generateSavingPlan,
+  getGreywaterUsage,
+  getLatestSavingPlan,
+  getSavingStats,
+  getWaterFlow,
+  type GreywaterUsageRecord,
+  type SavingPlan,
+  type SavingStats,
+} from '@/api/index';
+import {
   buildWaterFlowInsights,
-  buildWaterQualityInsights,
-  type WaterBillRecord,
+  type InsightPoint,
   type WaterFlowRecord,
-  type WaterQualityRecord,
 } from '@/utils/insights';
 import { consumeResidentDataTab, type ResidentDataTab } from '@/utils/data-nav';
 import { getStoredUser, type StoredUser } from '@/utils/session';
 
 const currentUser = ref<StoredUser | null>(null);
-const selectedTab = ref<ResidentDataTab>('flow');
+const selectedTab = ref<ResidentDataTab>('tap');
 const loading = ref(false);
+const generatingPlan = ref(false);
 const errorMessage = ref('');
 const flowRecords = ref<WaterFlowRecord[]>([]);
-const billRecords = ref<WaterBillRecord[]>([]);
-const qualityRecords = ref<WaterQualityRecord[]>([]);
+const greywaterRecords = ref<GreywaterUsageRecord[]>([]);
+const savingStats = ref<SavingStats | null>(null);
+const latestPlan = ref<SavingPlan | null>(null);
 
 const tabOptions = [
-  { label: '用水', value: 'flow' },
-  { label: '账单', value: 'bill' },
-  { label: '水质', value: 'quality' },
+  { label: '自来水', value: 'tap' },
+  { label: '灰水', value: 'greywater' },
+  { label: '趋势', value: 'trends' },
+  { label: '计划', value: 'plan' },
 ];
 
 onLoad((options) => {
   const requestedTab = (options?.tab || '') as ResidentDataTab;
-  if (requestedTab === 'flow' || requestedTab === 'bill' || requestedTab === 'quality') {
+  if (isSavingDataTab(requestedTab)) {
     selectedTab.value = requestedTab;
   }
 });
 
 onShow(() => {
   const queuedTab = consumeResidentDataTab();
-  if (queuedTab === 'flow' || queuedTab === 'bill' || queuedTab === 'quality') {
+  if (isSavingDataTab(queuedTab)) {
     selectedTab.value = queuedTab;
   }
 
@@ -133,70 +149,109 @@ onShow(() => {
 });
 
 const flowInsights = computed(() => buildWaterFlowInsights(flowRecords.value));
-const billInsights = computed(() => buildWaterBillInsights(billRecords.value));
-const qualityInsights = computed(() => buildWaterQualityInsights(qualityRecords.value));
+const greywaterTotal = computed(() => greywaterRecords.value.reduce((sum, record) => sum + Number(record.volume_liters || 0), 0));
+const greywaterFlushCount = computed(() => greywaterRecords.value.reduce((sum, record) => {
+  return record.usage_type === 'toilet_flush' ? sum + Number(record.event_count || 0) : sum;
+}, 0));
+const greywaterPoints = computed<InsightPoint[]>(() => {
+  return [...greywaterRecords.value]
+    .sort((left, right) => left.timestamp.localeCompare(right.timestamp))
+    .map((record) => ({
+      label: formatDayLabel(record.timestamp),
+      value: Number(record.volume_liters || 0),
+    }));
+});
+const replacementRateLabel = computed(() => `${Math.round(Number(savingStats.value?.replacement_rate || 0) * 100)}%`);
+const trendPoints = computed<InsightPoint[]>(() => {
+  const trends = savingStats.value?.trends || [];
+  if (trends.length) {
+    return trends.map((point) => ({
+      label: point.label,
+      value: Math.round(Number(point.replacement_rate || 0) * 100),
+    }));
+  }
+
+  return [
+    { label: '自来水', value: Number(savingStats.value?.tap_water_liters || 0) },
+    { label: '灰水', value: Number(savingStats.value?.greywater_liters || 0) },
+  ];
+});
 
 const currentPanel = computed(() => {
-  if (selectedTab.value === 'bill') {
+  if (selectedTab.value === 'greywater') {
     return {
-      kicker: '账单',
-      heroValue: billInsights.value.latest ? `¥${billInsights.value.latest}` : '待更新',
-      summary: billInsights.value.summary,
-      points: billInsights.value.points,
+      kicker: '灰水',
+      heroValue: `${greywaterTotal.value} L`,
+      summary: greywaterRecords.value.length
+        ? `已记录 ${greywaterFlushCount.value} 次灰水冲厕。`
+        : '暂无灰水记录，等待设备或手动记录更新。',
+      points: greywaterPoints.value,
       unit: '',
       metrics: [
-        { label: '最近', value: billInsights.value.latest ? `¥${billInsights.value.latest}` : '待更新', tone: 'deep' as const },
-        { label: '合计', value: `¥${billInsights.value.total}`, tone: 'mist' as const },
-        {
-          label: '变化',
-          value: `${billInsights.value.deltaFromPrevious >= 0 ? '+' : ''}${billInsights.value.deltaFromPrevious}`,
-          tone: billInsights.value.deltaFromPrevious > 0 ? 'warning' as const : 'mist' as const,
-        },
+        { label: '灰水量', value: `${greywaterTotal.value} L`, tone: 'deep' as const },
+        { label: '冲厕', value: `${greywaterFlushCount.value}`, tone: 'mist' as const },
+        { label: '替代率', value: replacementRateLabel.value, tone: 'mist' as const },
       ],
-      columns: ['月份', '金额'],
-      rows: [...billRecords.value]
-        .sort((left, right) => right.month.localeCompare(left.month))
+      columns: ['场景', '用量'],
+      rows: [...greywaterRecords.value]
+        .sort((left, right) => right.timestamp.localeCompare(left.timestamp))
         .map((record) => ({
-          id: `${record.id || record.month}-bill`,
-          primary: record.month,
-          secondary: `¥${record.amount}`,
+          id: `${record.id || record.timestamp}-greywater`,
+          primary: `${usageTypeLabel(record.usage_type)} · ${record.timestamp.replace('T', ' ').slice(0, 16)}`,
+          secondary: `${record.volume_liters} L`,
         })),
     };
   }
 
-  if (selectedTab.value === 'quality') {
+  if (selectedTab.value === 'trends') {
     return {
-      kicker: '水质',
-      heroValue: qualityInsights.value.latest ? `${qualityInsights.value.latest} NTU` : '待更新',
-      summary: qualityInsights.value.summary,
-      points: qualityInsights.value.points,
+      kicker: '替代率趋势',
+      heroValue: replacementRateLabel.value,
+      summary: savingStats.value
+        ? `灰水已替代 ${savingStats.value.estimated_savings_liters} L 自来水。`
+        : '暂无趋势数据，等待节水统计更新。',
+      points: trendPoints.value,
       unit: '',
       metrics: [
-        {
-          label: '最近',
-          value: qualityInsights.value.latest ? `${qualityInsights.value.latest} NTU` : '待更新',
-          tone: qualityInsights.value.statusTone === 'watch' ? 'warning' as const : 'deep' as const,
-        },
-        { label: '平均', value: `${qualityInsights.value.average} NTU`, tone: 'mist' as const },
-        {
-          label: '提醒',
-          value: `${qualityInsights.value.anomalyCount}`,
-          tone: qualityInsights.value.anomalyCount ? 'warning' as const : 'mist' as const,
-        },
+        { label: '自来水', value: `${savingStats.value?.tap_water_liters || 0} L`, tone: 'deep' as const },
+        { label: '灰水', value: `${savingStats.value?.greywater_liters || 0} L`, tone: 'mist' as const },
+        { label: '替代率', value: replacementRateLabel.value, tone: 'mist' as const },
       ],
-      columns: ['时间', '浊度'],
-      rows: [...qualityRecords.value]
-        .sort((left, right) => right.timestamp.localeCompare(left.timestamp))
-        .map((record) => ({
-          id: `${record.id || record.timestamp}-quality`,
-          primary: record.timestamp.replace('T', ' ').slice(0, 16),
-          secondary: `${record.turbidity_value} NTU`,
-        })),
+      columns: ['指标', '数值'],
+      rows: [
+        { id: 'trend-tap', primary: '自来水累计', secondary: `${savingStats.value?.tap_water_liters || 0} L` },
+        { id: 'trend-greywater', primary: '灰水累计', secondary: `${savingStats.value?.greywater_liters || 0} L` },
+        { id: 'trend-rate', primary: '灰水替代率', secondary: replacementRateLabel.value },
+      ],
+    };
+  }
+
+  if (selectedTab.value === 'plan') {
+    return {
+      kicker: 'AI 节水计划',
+      heroValue: latestPlan.value ? `${latestPlan.value.estimated_savings_liters} L` : '待生成',
+      summary: latestPlan.value?.plan_text || '暂无计划，点击生成后会基于近期自来水和灰水数据给出建议。',
+      points: [
+        { label: '目标', value: latestPlan.value?.target_flush_count || 0 },
+        { label: '当前', value: savingStats.value?.flush_count || 0 },
+      ],
+      unit: '',
+      metrics: [
+        { label: '冲厕目标', value: `${latestPlan.value?.target_flush_count || 0}`, tone: 'deep' as const },
+        { label: '替代目标', value: `${Math.round(Number(latestPlan.value?.target_replacement_rate || 0) * 100)}%`, tone: 'mist' as const },
+        { label: '模型', value: latestPlan.value?.model_name || '未生成', tone: 'mist' as const },
+      ],
+      columns: ['计划项', '内容'],
+      rows: [
+        { id: 'plan-text', primary: '建议', secondary: latestPlan.value?.plan_text || '暂无计划' },
+        { id: 'plan-target', primary: '灰水冲厕目标', secondary: `${latestPlan.value?.target_flush_count || 0} 次` },
+        { id: 'plan-saving', primary: '预计节省', secondary: `${latestPlan.value?.estimated_savings_liters || 0} L` },
+      ],
     };
   }
 
   return {
-    kicker: '用水',
+    kicker: '自来水',
     heroValue: `${flowInsights.value.total} L`,
     summary: flowInsights.value.summary,
     points: flowInsights.value.points,
@@ -222,9 +277,10 @@ const currentPanel = computed(() => {
 });
 
 const emptyMessage = computed(() => {
-  if (selectedTab.value === 'bill') return '还没有账单记录。';
-  if (selectedTab.value === 'quality') return '还没有水质记录。';
-  return '还没有用水记录。';
+  if (selectedTab.value === 'greywater') return '还没有灰水记录。';
+  if (selectedTab.value === 'trends') return '还没有趋势记录。';
+  if (selectedTab.value === 'plan') return '还没有节水计划。';
+  return '还没有自来水记录。';
 });
 
 async function loadDataCenter() {
@@ -233,32 +289,77 @@ async function loadDataCenter() {
 
   if (!currentUser.value?.room_number) {
     flowRecords.value = [];
-    billRecords.value = [];
-    qualityRecords.value = [];
+    greywaterRecords.value = [];
+    savingStats.value = null;
+    latestPlan.value = null;
     return;
   }
 
   loading.value = true;
 
   try {
-    const [flow, bills, quality] = await Promise.all([
+    const [flowResult, greywaterResult, statsResult, planResult] = await Promise.allSettled([
       getWaterFlow(currentUser.value.room_number),
-      getWaterBill(currentUser.value.room_number),
-      getSewageTurbidity(currentUser.value.room_number),
+      getGreywaterUsage(currentUser.value.room_number),
+      getSavingStats(currentUser.value.room_number),
+      getLatestSavingPlan(currentUser.value.room_number),
     ]);
 
-    flowRecords.value = flow;
-    billRecords.value = bills;
-    qualityRecords.value = quality;
-  } catch {
-    errorMessage.value = '暂时没有加载成功，请稍后再试。';
+    flowRecords.value = flowResult.status === 'fulfilled' ? flowResult.value : [];
+    greywaterRecords.value = greywaterResult.status === 'fulfilled' ? greywaterResult.value : [];
+    savingStats.value = statsResult.status === 'fulfilled' ? statsResult.value : null;
+    latestPlan.value = planResult.status === 'fulfilled' ? planResult.value : null;
+
+    if (
+      flowResult.status === 'rejected'
+      && greywaterResult.status === 'rejected'
+      && statsResult.status === 'rejected'
+      && planResult.status === 'rejected'
+    ) {
+      errorMessage.value = '暂时没有加载成功，已显示空状态。';
+    }
   } finally {
     loading.value = false;
   }
 }
 
+async function handleGeneratePlan() {
+  if (!currentUser.value?.room_number || generatingPlan.value) {
+    return;
+  }
+
+  generatingPlan.value = true;
+  try {
+    latestPlan.value = await generateSavingPlan(currentUser.value.room_number);
+    uni.showToast({ title: '计划已生成', icon: 'success' });
+  } catch {
+    uni.showToast({ title: '生成失败，请稍后再试', icon: 'none' });
+  } finally {
+    generatingPlan.value = false;
+  }
+}
+
 function goToLogin() {
   uni.navigateTo({ url: '/pages/login/index' });
+}
+
+function isSavingDataTab(value: string): value is ResidentDataTab {
+  return value === 'tap' || value === 'greywater' || value === 'trends' || value === 'plan';
+}
+
+function usageTypeLabel(value: string) {
+  if (value === 'toilet_flush') return '冲厕';
+  if (value === 'cleaning') return '清洁';
+  return '其他';
+}
+
+function formatDayLabel(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return value.slice(5, 10) || value;
+  }
+
+  return `${String(date.getMonth() + 1).padStart(2, '0')}/${String(date.getDate()).padStart(2, '0')}`;
 }
 </script>
 
@@ -372,6 +473,13 @@ function goToLogin() {
   padding: 24rpx 0 20rpx;
   font-size: 26rpx;
   color: var(--st-text-soft);
+}
+
+.data-card__action {
+  position: relative;
+  z-index: 1;
+  margin-top: 22rpx;
+  width: 100%;
 }
 
 .data-page__metrics {

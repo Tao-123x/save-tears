@@ -2,7 +2,7 @@
   <EditorialPage tone="mist">
     <view class="redirect-page">
       <text class="st-kicker">数据中心</text>
-      <text class="st-title">正在前往水质记录。</text>
+      <text class="st-title">正在前往灰水记录。</text>
     </view>
   </EditorialPage>
 </template>
@@ -14,7 +14,7 @@ import EditorialPage from '@/components/EditorialPage.vue';
 import { queueResidentDataTab } from '@/utils/data-nav';
 
 onLoad(() => {
-  queueResidentDataTab('quality');
+  queueResidentDataTab('greywater');
   setTimeout(() => {
     uni.switchTab({ url: '/pages/data/index' });
   }, 40);

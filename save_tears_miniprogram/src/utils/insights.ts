@@ -41,6 +41,30 @@ export interface MetricHighlight {
   tone: 'mist' | 'deep' | 'warning';
 }
 
+export interface SavingOverviewInput {
+  tapWaterLiters?: number;
+  greywaterLiters?: number;
+  flushCount?: number;
+  targetFlushCount?: number;
+  latestPlanText?: string;
+}
+
+export interface SavingRoomSummary {
+  roomNumber: string;
+  tapWaterLiters: number;
+  greywaterLiters: number;
+  estimatedSavingsLiters: number;
+  replacementRate: number;
+  flushCount: number;
+}
+
+export interface SavingDeviceSummary {
+  device_id: string;
+  room_number?: string;
+  status?: string | null;
+  last_seen_at?: string;
+}
+
 function sortByDate<T>(records: T[], getValue: (record: T) => string) {
   return [...records].sort((left, right) => {
     return new Date(getValue(left)).getTime() - new Date(getValue(right)).getTime();
@@ -62,6 +86,16 @@ function formatMonthLabel(value: string) {
 
 function roundNumber(value: number) {
   return Math.round(value * 10) / 10;
+}
+
+function safeNumber(value: number | undefined) {
+  const parsed = Number(value || 0);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
+}
+
+function formatPercent(value: number) {
+  const safeValue = Number.isFinite(value) && value > 0 ? value : 0;
+  return `${Math.round(safeValue * 100)}%`;
 }
 
 export function buildTrendGeometry(
@@ -125,6 +159,36 @@ export function buildTrendGeometry(
     maxValue,
     nodes,
     segments,
+  };
+}
+
+export function buildSavingOverview(input: SavingOverviewInput) {
+  const tapWaterLiters = safeNumber(input.tapWaterLiters);
+  const greywaterLiters = safeNumber(input.greywaterLiters);
+  const flushCount = Math.round(safeNumber(input.flushCount));
+  const targetFlushCount = Math.round(safeNumber(input.targetFlushCount));
+  const totalWaterLiters = tapWaterLiters + greywaterLiters;
+  const replacementRate = totalWaterLiters > 0 ? greywaterLiters / totalWaterLiters : 0;
+  const estimatedSavingsLiters = greywaterLiters;
+  const targetProgress = targetFlushCount > 0 ? Math.min(flushCount / targetFlushCount, 1) : 0;
+  const latestPlanPreview = String(input.latestPlanText || '').trim();
+
+  return {
+    tapWaterLiters,
+    greywaterLiters,
+    flushCount,
+    totalWaterLiters,
+    estimatedSavingsLiters,
+    replacementRate,
+    replacementRateLabel: formatPercent(replacementRate),
+    targetFlushCount,
+    targetProgress,
+    targetProgressLabel: targetFlushCount > 0 ? `${flushCount}/${targetFlushCount}` : '0/0',
+    latestPlanPreview,
+    summary:
+      totalWaterLiters === 0
+        ? '暂无节水数据，等待设备或手动记录更新。'
+        : `今日灰水已替代约 ${formatPercent(replacementRate)} 的总用水。`,
   };
 }
 
@@ -282,5 +346,48 @@ export function buildAdminOverview(users: AdminUserRecord[]) {
     roomsMissing: users
       .filter((user) => !String(user.room_number || '').trim())
       .map((user) => user.username),
+  };
+}
+
+export function buildSavingAdminOverview(
+  rooms: SavingRoomSummary[],
+  devices: SavingDeviceSummary[] = [],
+  options?: {
+    lowReplacementThreshold?: number;
+  },
+) {
+  const lowReplacementThreshold = options?.lowReplacementThreshold ?? 0.1;
+  const normalizedRooms = rooms.map((room) => ({
+    ...room,
+    tapWaterLiters: safeNumber(room.tapWaterLiters),
+    greywaterLiters: safeNumber(room.greywaterLiters),
+    estimatedSavingsLiters: safeNumber(room.estimatedSavingsLiters),
+    replacementRate: safeNumber(room.replacementRate),
+    flushCount: Math.round(safeNumber(room.flushCount)),
+    replacementRateLabel: formatPercent(room.replacementRate),
+  }));
+
+  const totalTapWaterLiters = normalizedRooms.reduce((sum, room) => sum + room.tapWaterLiters, 0);
+  const totalGreywaterLiters = normalizedRooms.reduce((sum, room) => sum + room.greywaterLiters, 0);
+  const totalEstimatedSavingsLiters = normalizedRooms.reduce((sum, room) => sum + room.estimatedSavingsLiters, 0);
+  const totalFlushCount = normalizedRooms.reduce((sum, room) => sum + room.flushCount, 0);
+  const totalWaterLiters = totalTapWaterLiters + totalGreywaterLiters;
+  const averageReplacementRate = totalWaterLiters > 0 ? totalGreywaterLiters / totalWaterLiters : 0;
+
+  return {
+    totalTapWaterLiters,
+    totalGreywaterLiters,
+    totalEstimatedSavingsLiters,
+    totalFlushCount,
+    averageReplacementRate,
+    averageReplacementRateLabel: formatPercent(averageReplacementRate),
+    roomRanking: [...normalizedRooms].sort((left, right) => {
+      if (right.replacementRate !== left.replacementRate) {
+        return right.replacementRate - left.replacementRate;
+      }
+      return right.estimatedSavingsLiters - left.estimatedSavingsLiters;
+    }),
+    lowReplacementRooms: normalizedRooms.filter((room) => room.replacementRate < lowReplacementThreshold),
+    offlineDevices: devices.filter((device) => String(device.status || '').toLowerCase() !== 'online'),
   };
 }

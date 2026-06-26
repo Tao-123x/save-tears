@@ -11,6 +11,7 @@ Do not store passwords, private keys, tokens, or `.env.production` contents in t
 - `www` site: `https://www.savetear.cloud/`
 - Backend health check: `https://savetear.cloud/api/health`
 - Temporary direct IP entry, if domain troubleshooting is needed: `http://111.229.142.196/`
+- Web frontend: H5 build of `save_tears_miniprogram`, currently showing the greywater saving experience.
 
 Current verified status:
 
@@ -56,25 +57,14 @@ The backend container port `8000` must remain private; public traffic goes throu
 
 ## TLS Certificate
 
-The current certificate is a manually downloaded Tencent Cloud / TrustAsia certificate.
-
-- Certificate subject: `savetear.cloud`
-- Covered domains: `savetear.cloud`, `www.savetear.cloud`
-- Issuer: `TrustAsia DV TLS RSA CA 2025`
-- Valid from: `2026-04-25`
-- Valid until: `2026-11-09`
-- Server certificate directory: `/home/ubuntu/save-tears/certs`
-- Expected server files:
-  - `/home/ubuntu/save-tears/certs/savetear.cloud_bundle.crt`
-  - `/home/ubuntu/save-tears/certs/savetear.cloud.key`
+Caddy now uses automatic HTTPS for `DOMAIN`. The `ACME_EMAIL` value in `.env.production` is used for certificate registration and renewal.
 
 Security rule:
 
-- `certs/` is ignored by git.
-- Never commit `savetear.cloud.key`.
-- When renewing the certificate, replace the two files above and restart Caddy.
+- Do not commit `.env.production`.
+- Do not commit any private key if the deployment is changed back to manual certificates later.
 
-Restart Caddy after replacing the certificate:
+Restart Caddy after changing domain or TLS settings:
 
 ```bash
 ssh ubuntu@111.229.142.196
@@ -93,7 +83,7 @@ docker-compose.prod.yml
 Services:
 
 - `backend`: FastAPI app, private port `8000`, SQLite database stored in Docker volume.
-- `frontend`: H5 build of `save_tears_miniprogram`, private Nginx port `80`.
+- `frontend`: H5 build of `save_tears_miniprogram`, private Nginx port `80`. This is the runnable web frontend; there is no separate `save_tears_frontend` deployment.
 - `caddy`: public reverse proxy, exposes `80` and `443`.
 
 Persistent volumes:
@@ -108,10 +98,18 @@ Important production files on the server:
 /home/ubuntu/save-tears/.env.production
 /home/ubuntu/save-tears/Caddyfile
 /home/ubuntu/save-tears/docker-compose.prod.yml
-/home/ubuntu/save-tears/certs/
 ```
 
 `.env.production` contains secrets and must not be copied into git.
+
+Required production environment highlights:
+
+```bash
+DOMAIN=savetear.cloud
+ACME_EMAIL=your-email@example.com
+SAVE_TEARS_SECRET=replace-with-a-long-random-secret
+SAVE_TEARS_THINGCLOUD_WEBHOOK_SECRET=replace-with-a-different-long-random-secret
+```
 
 ## Update Procedure
 
@@ -164,6 +162,32 @@ Expected health response:
 
 ```json
 {"status":"ok","database":"ok","service":"save-tears-backend","version":"1.0.0"}
+```
+
+Web frontend verification:
+
+- Open `https://savetear.cloud/`.
+- Register or log in.
+- Confirm the home page title is `节水概览`.
+- Confirm the data center shows the tabs `自来水`, `灰水`, `趋势`, and `计划`.
+- For an admin account, open `我的 -> 管理` and confirm the page title is `节水管理`.
+- Generate a saving plan from the `计划` tab. If no LLM API is configured, the backend should still return a rule-based fallback plan.
+
+Optional ThingCloud webhook smoke test, using the secret from `.env.production`:
+
+```bash
+curl -X POST https://savetear.cloud/api/integrations/thingcloud/events \
+  -H 'Content-Type: application/json' \
+  -H "X-ThingCloud-Secret: $SAVE_TEARS_THINGCLOUD_WEBHOOK_SECRET" \
+  -d '{
+    "event_id": "deploy-smoke-001",
+    "device_id": "GW-A101-001",
+    "room_number": "A101",
+    "event_type": "toilet_flush",
+    "event_count": 1,
+    "timestamp": "2026-04-27T10:30:00",
+    "source": "device"
+  }'
 ```
 
 ## Useful Operations

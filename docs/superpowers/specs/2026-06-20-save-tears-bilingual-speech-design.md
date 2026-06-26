@@ -9,7 +9,7 @@ Create a five-minute recruitment speech that follows the existing seven-slide En
 - English is the only language spoken on site.
 - Chinese appears after each English slide section as a rehearsal and comprehension aid.
 - The script is organised slide by slide so the speaker always knows when to advance.
-- The English script targets about 520–570 words, suitable for a clear non-native speaking pace with short pauses.
+- The English script targets about 520–540 words, suitable for a clear non-native speaking pace with short pauses.
 
 ## Tone
 

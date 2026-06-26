@@ -1,5 +1,5 @@
-const DAILY_DIGEST_KEY = 'daily_digest_enabled';
-const ANOMALY_ALERTS_KEY = 'anomaly_alerts_enabled';
+const SAVING_TARGET_REMINDERS_KEY = 'saving_target_reminders_enabled';
+const DEVICE_ABNORMALITY_ALERTS_KEY = 'device_abnormality_alerts_enabled';
 
 function readBoolean(key: string, fallback = true) {
   if (typeof uni === 'undefined') {
@@ -24,15 +24,15 @@ function writeBoolean(key: string, value: boolean) {
 
 export function getResidentPreferences() {
   return {
-    dailyDigestEnabled: readBoolean(DAILY_DIGEST_KEY, true),
-    anomalyAlertsEnabled: readBoolean(ANOMALY_ALERTS_KEY, true),
+    savingTargetRemindersEnabled: readBoolean(SAVING_TARGET_REMINDERS_KEY, true),
+    deviceAbnormalityAlertsEnabled: readBoolean(DEVICE_ABNORMALITY_ALERTS_KEY, true),
   };
 }
 
 export function saveResidentPreferences(input: {
-  dailyDigestEnabled: boolean;
-  anomalyAlertsEnabled: boolean;
+  savingTargetRemindersEnabled: boolean;
+  deviceAbnormalityAlertsEnabled: boolean;
 }) {
-  writeBoolean(DAILY_DIGEST_KEY, input.dailyDigestEnabled);
-  writeBoolean(ANOMALY_ALERTS_KEY, input.anomalyAlertsEnabled);
+  writeBoolean(SAVING_TARGET_REMINDERS_KEY, input.savingTargetRemindersEnabled);
+  writeBoolean(DEVICE_ABNORMALITY_ALERTS_KEY, input.deviceAbnormalityAlertsEnabled);
 }

@@ -1,5 +1,5 @@
 import { getStoredUser } from '@/utils/session';
-import { resolveApiBaseUrl } from '@/utils/api-base';
+import { encodeRoomPath, resolveApiBaseUrl } from '@/utils/api-base';
 
 export interface LoginResponse {
     msg: string;
@@ -14,6 +14,83 @@ export interface UserRecord {
     room_number?: string;
     role?: string;
     id?: number;
+}
+
+export type GreywaterUsageType = 'toilet_flush' | 'cleaning' | 'other';
+export type GreywaterSource = 'device' | 'manual' | 'mock';
+export type DeviceStatus = 'online' | 'offline' | 'warning';
+export type SavingPlanStatus = 'active' | 'archived';
+
+export interface GreywaterUsageRecord {
+    id?: number;
+    room_number?: string;
+    device_id?: string;
+    usage_type: GreywaterUsageType;
+    event_count: number;
+    volume_liters: number;
+    source: GreywaterSource;
+    timestamp: string;
+    raw_payload_json?: string | null;
+}
+
+export interface GreywaterQualityRecord {
+    id?: number;
+    room_number?: string;
+    device_id?: string;
+    ph_value?: number | null;
+    turbidity_value?: number | null;
+    source: GreywaterSource;
+    timestamp: string;
+    raw_payload_json?: string | null;
+}
+
+export interface SavingTrendPoint {
+    label: string;
+    tap_water_liters: number;
+    greywater_liters: number;
+    replacement_rate: number;
+}
+
+export interface SavingStats {
+    room_number?: string;
+    tap_water_liters: number;
+    greywater_liters: number;
+    estimated_savings_liters: number;
+    replacement_rate: number;
+    flush_count: number;
+    trends?: SavingTrendPoint[];
+}
+
+export interface SavingPlan {
+    id?: number;
+    room_number?: string;
+    period_start?: string;
+    period_end?: string;
+    plan_text: string;
+    target_flush_count: number;
+    target_replacement_rate: number;
+    estimated_savings_liters: number;
+    model_name: string;
+    created_at?: string;
+    status?: SavingPlanStatus | string;
+}
+
+export interface Device {
+    id?: number;
+    device_id: string;
+    room_number?: string;
+    device_type?: string;
+    status: DeviceStatus | string;
+    last_seen_at?: string;
+    source_platform?: string;
+    metadata_json?: string;
+}
+
+function unwrapApiData<T>(response: T | { data: T }): T {
+    if (response && typeof response === 'object' && 'data' in response) {
+        return (response as { data: T }).data;
+    }
+    return response as T;
 }
 
 function getBaseUrl() {
@@ -99,7 +176,7 @@ export const submitWaterFlow = (roomNumber: string, flowRate: number, timestamp:
  * 获取某个房间的水流量数据
  */
 export const getWaterFlow = (roomNumber: string) => {
-    return callApi(`/water_flow/${roomNumber}`) as Promise<Array<{
+    return callApi(`/water_flow/${encodeRoomPath(roomNumber)}`) as Promise<Array<{
         id?: number;
         room_number?: string;
         flow_rate: number;
@@ -120,7 +197,7 @@ export const submitSewageTurbidity = (roomNumber: string, turbidityValue: number
  * 获取某个房间的污水浊度数据
  */
 export const getSewageTurbidity = (roomNumber: string) => {
-    return callApi(`/sewage_turbidity/${roomNumber}`) as Promise<Array<{
+    return callApi(`/sewage_turbidity/${encodeRoomPath(roomNumber)}`) as Promise<Array<{
         id?: number;
         room_number?: string;
         turbidity_value: number;
@@ -141,12 +218,56 @@ export const submitWaterBill = (roomNumber: string, amount: number, month: strin
  * 获取某个房间的水费数据
  */
 export const getWaterBill = (roomNumber: string) => {
-    return callApi(`/water_bill/${roomNumber}`) as Promise<Array<{
+    return callApi(`/water_bill/${encodeRoomPath(roomNumber)}`) as Promise<Array<{
         id?: number;
         room_number?: string;
         amount: number;
         month: string;
     }>>;
+};
+
+// ==================== 灰水节水 API ====================
+
+/**
+ * 获取某个房间的灰水使用记录
+ */
+export const getGreywaterUsage = (roomNumber: string) => {
+    return callApi(`/greywater_usage/${encodeRoomPath(roomNumber)}`) as Promise<GreywaterUsageRecord[]>;
+};
+
+/**
+ * 获取某个房间的灰水 pH 和浊度记录
+ */
+export const getGreywaterQuality = (roomNumber: string) => {
+    return callApi(`/greywater_quality/${encodeRoomPath(roomNumber)}`) as Promise<GreywaterQualityRecord[]>;
+};
+
+/**
+ * 获取某个房间的节水统计
+ */
+export const getSavingStats = (roomNumber: string) => {
+    return callApi(`/saving_stats/${encodeRoomPath(roomNumber)}`) as Promise<SavingStats>;
+};
+
+/**
+ * 生成并保存某个房间的节水计划
+ */
+export const generateSavingPlan = (roomNumber: string) => {
+    return callApi(`/saving_plans/${encodeRoomPath(roomNumber)}/generate`, 'POST').then(unwrapApiData<SavingPlan>);
+};
+
+/**
+ * 获取某个房间最新的节水计划
+ */
+export const getLatestSavingPlan = (roomNumber: string) => {
+    return callApi(`/saving_plans/${encodeRoomPath(roomNumber)}/latest`).then(unwrapApiData<SavingPlan>);
+};
+
+/**
+ * 获取灰水设备列表，供管理员页面使用
+ */
+export const getDevices = () => {
+    return callApi('/devices') as Promise<Device[]>;
 };
 
 // ==================== 其他 API ====================

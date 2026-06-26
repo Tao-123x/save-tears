@@ -10,6 +10,9 @@ node_modules/
 .env.production
 certs/
 .DS_Store
+.superpowers/
+tmp/
+outputs/
 
 # Uni-app / Wechat DevTools
 dist/
